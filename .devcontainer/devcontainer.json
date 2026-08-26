@@ -1,0 +1,38 @@
+{
+  "name": "Bitcraze Builder ESP-IDF",
+  "image": "bitcraze/builder",
+
+  "workspaceMount": "type=bind,source=${localWorkspaceFolder},target=/module",
+  "workspaceFolder": "/module",
+
+  "runArgs": [
+    "--privileged",
+    "--device=/dev/ttyUSB0"
+  ],
+
+  "overrideCommand": true,
+
+  "postCreateCommand": "bash -lc \"source /new_home/.espressif/python_env/idf4.3_py3.10_env/bin/activate && python -m pip install --force-reinstall --no-cache-dir 'setuptools<81' && python -m pip install --no-cache-dir click && source /new_home/esp/esp-idf/export.sh\"",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "llvm-vs-code-extensions.vscode-clangd",
+        "gitlab.gitlab-workflow"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "ESP-IDF Bash",
+        "terminal.integrated.profiles.linux": {
+          "ESP-IDF Bash": {
+            "path": "/bin/bash",
+            "args": [
+              "-c",
+              "source /new_home/.espressif/python_env/idf4.3_py3.10_env/bin/activate && source /new_home/esp/esp-idf/export.sh && exec bash"
+            ]
+          }
+        }
+      }
+    }
+  }
+}
+
