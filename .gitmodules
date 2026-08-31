@@ -1,0 +1,3 @@
+[submodule "components/esp-osc"]
+	path = components/esp-osc
+	url = https://github.com/avenaradio/esp-osc.git

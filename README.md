@@ -1,3 +1,20 @@
+###### Build
+```sh
+idf.py build
+```
+###### Flash over JTAG
+```sh
+openocd \
+  -f ./gapuino_ftdi.cfg \
+  -f board/esp-wroom-32.cfg \
+  -c 'adapter_khz 20000' \
+  -c 'program_esp build/bootloader/bootloader.bin 0x1000 verify' \
+  -c 'program_esp build/aideck_esp.bin 0x10000 verify reset exit'
+```
+
+###### WiFi
+ssid and pw are provided by cf firmware!
+
 # AI-Deck ESP32 firmware [![CI](https://github.com/bitcraze/aideck-esp-firmware/workflows/CI/badge.svg)](https://github.com/bitcraze/aideck-esp-firmware/actions?query=workflow%3ACI)
 
 This firmware is running on the ESP32 Nina W102 module of the AI-Deck. It

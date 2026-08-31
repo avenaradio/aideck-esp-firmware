@@ -172,6 +172,11 @@ static void wifi_init_softap(const char *ssid, const char* key)
   esp_netif_t* ap_netif = esp_netif_create_default_wifi_ap();
   assert(ap_netif);
 
+  // Set the DHCP hostname
+    ESP_ERROR_CHECK(
+        esp_netif_set_hostname(ap_netif, "crazyflie_esp")
+    );
+
   wifi_config_t wifi_config = {
       .ap = {
           .ssid_len = strlen(ssid),

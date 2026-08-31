@@ -23,6 +23,7 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 #include "sdkconfig.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -43,73 +44,12 @@
 #include "test.h"
 #include "wifi.h"
 #include "system.h"
+#include "osc.h"
 
 /* The LED is connected on GPIO */
 #define BLINK_GPIO 4
 
-// TODO krri remove?
-// void test_echo(int count) {
-//     static spi_transport_packet_t packet;
-
-//     printf("Testing %d max-size pings ...\n", count);
-
-//     packet.length = ESP_TRANSPORT_MTU;
-//     packet.data[0] = 0x01;
-//     spi_transport_send(&packet);
-
-//     int start  = xTaskGetTickCount();
-//     for (int i=0; i<100; i++) {
-//         packet.length = 64;
-//         packet.data[0] = 0x01;
-//         spi_transport_send(&packet);
-//         spi_transport_receive(&packet);
-//     }
-
-//     spi_transport_receive(&packet);
-
-//     int stop = xTaskGetTickCount();
-
-//     float runtime = (float)(stop - start) / (float)xPortGetTickRateHz();
-//     float ping_per_seconds = count / runtime;
-//     printf("Done in %f ms, %f ping/s\n", runtime * 1000, ping_per_seconds);
-// }
-
-// void test_source() {
-//     static spi_transport_packet_t packet;
-
-//     printf("Testing sourcing 100 packets ...\n");
-
-//     packet.length = 10;
-//     packet.data[0] = 0x02;
-//     packet.data[1] = 100;
-//     packet.data[2] = 62;
-
-//     spi_transport_send(&packet);
-
-//     for (int i=0; i<100; i++) {
-//         spi_transport_receive(&packet);
-//     }
-//     printf("Done!\n");
-// }
-
-// void test_sink(int count) {
-//     static spi_transport_packet_t packet;
-
-//     printf("Testing %d packet TX\n", count);
-
-//     int start  = xTaskGetTickCount();
-//     for (int i=0; i<count; i++) {
-//         packet.length = ESP_TRANSPORT_MTU;
-//         packet.data[0] = 0x00;
-//         spi_transport_send(&packet);
-//     }
-//     int stop = xTaskGetTickCount();
-
-//     float runtime = (float)(stop - start) / (float)xPortGetTickRateHz();
-//     float pk_per_seconds = count / runtime;
-//     printf("Done in %f ms, %f pk/s, %f B/s\n", runtime * 1000, pk_per_seconds, pk_per_seconds * ESP_TRANSPORT_MTU);
-// }
-
+// For ESP_LOG
 static esp_routable_packet_t txp;
 int cpx_and_uart_vprintf(const char * fmt, va_list ap) {
     int len = vprintf(fmt, ap);
@@ -121,6 +61,25 @@ int cpx_and_uart_vprintf(const char * fmt, va_list ap) {
     return len;
 }
 
+static esp_routable_packet_t txp_to_app;
+
+// Send string to app
+void cpx_to_app(const char * data) {
+    if (data == NULL) {
+        return;
+    }
+    size_t length = strlen(data);
+    // Leave room for the terminating '\0'
+    if (length >= sizeof(txp_to_app.data)) {
+        length = sizeof(txp_to_app.data) - 1;
+    }
+    cpxInitRoute(CPX_T_ESP32, CPX_T_STM32, CPX_F_APP, &txp_to_app.route); // Add route to txp_to_app
+    memcpy(txp_to_app.data, data, length);
+    txp_to_app.data[length] = '\0';
+    txp_to_app.dataLength = length + 1;
+    espAppSendToRouterBlocking(&txp_to_app); // Send message
+    return;
+}
 
 
 #define DEBUG_TXD_PIN (GPIO_NUM_0) // Nina 27 /SYSBOOT) => 0
@@ -183,9 +142,14 @@ void app_main(void)
 
     discovery_init();
 
-    while(1) {
-        vTaskDelay(20);
+    // TODO: wait for wifii connection
+    vTaskDelay(2000);
+    osc_start();
 
+    while(1) {
+        vTaskDelay(2000);
+        char *test_msg = "Hello from the ESPEEEEEE";
+        cpx_to_app(test_msg);
     }
     esp_restart();
 }

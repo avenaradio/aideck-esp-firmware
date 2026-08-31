@@ -1,18 +1,26 @@
 {
-  "name": "Bitcraze Builder ESP-IDF",
-  "image": "bitcraze/builder",
+  "name": "AIdeck ESP-IDF 4.3",
+
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
 
   "workspaceMount": "type=bind,source=${localWorkspaceFolder},target=/module",
   "workspaceFolder": "/module",
 
-  "runArgs": [
-    "--privileged",
-    "--device=/dev/ttyUSB0"
-  ],
+  "remoteUser": "root",
 
   "overrideCommand": true,
 
-  "postCreateCommand": "bash -lc \"source /new_home/.espressif/python_env/idf4.3_py3.10_env/bin/activate && python -m pip install --force-reinstall --no-cache-dir 'setuptools<81' && python -m pip install --no-cache-dir click && source /new_home/esp/esp-idf/export.sh\"",
+  "runArgs": [
+    "--privileged",
+    "--device=/dev/ttyUSB0",
+    "--device-cgroup-rule=c 188:* rmw",
+    "--device-cgroup-rule=c 189:* rmw",
+    "--volume=/dev/bus:/dev/bus:ro",
+    "--volume=/dev/serial:/dev/serial:ro"
+  ],
 
   "customizations": {
     "vscode": {
@@ -20,19 +28,22 @@
         "llvm-vs-code-extensions.vscode-clangd",
         "gitlab.gitlab-workflow"
       ],
+
       "settings": {
-        "terminal.integrated.defaultProfile.linux": "ESP-IDF Bash",
+        "terminal.integrated.defaultProfile.linux": "ESP-IDF",
+
         "terminal.integrated.profiles.linux": {
-          "ESP-IDF Bash": {
+          "ESP-IDF": {
             "path": "/bin/bash",
             "args": [
               "-c",
-              "source /new_home/.espressif/python_env/idf4.3_py3.10_env/bin/activate && source /new_home/esp/esp-idf/export.sh && exec bash"
+              "source /new_home/esp/esp-idf/export.sh && exec bash"
             ]
           }
         }
       }
     }
-  }
-}
+  },
 
+  "postCreateCommand": "bash -c 'source /new_home/esp/esp-idf/export.sh && cd /module && idf.py reconfigure'"
+}
