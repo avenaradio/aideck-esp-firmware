@@ -56,11 +56,11 @@ static esp_routable_packet_t txp;
 static char ssid[MAX_SSID_SIZE];
 static char key[MAX_SSID_SIZE];
 
-static const int WIFI_CONNECTED_BIT = BIT0;
+const int WIFI_CONNECTED_BIT = BIT0;
 static const int WIFI_SOCKET_DISCONNECTED = BIT1;
 static const int WIFI_PACKET_WAIT_SEND = BIT2;
 static const int WIFI_PACKET_SENDING = BIT3;
-static EventGroupHandle_t s_wifi_event_group;
+EventGroupHandle_t s_wifi_event_group = NULL;
 
 static const int START_UP_MAIN_TASK = BIT0;
 static const int START_UP_RX_TASK = BIT1;

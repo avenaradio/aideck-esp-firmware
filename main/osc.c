@@ -75,7 +75,7 @@ static bool callback(const char *topic, const char *format, esp_osc_value_t *val
             break;
         }
     }
-
+    
     return true;
 }
 

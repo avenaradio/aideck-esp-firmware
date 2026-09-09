@@ -4,12 +4,8 @@ idf.py build
 ```
 ###### Flash over JTAG
 ```sh
-openocd \
-  -f ./gapuino_ftdi.cfg \
-  -f board/esp-wroom-32.cfg \
-  -c 'adapter_khz 20000' \
-  -c 'program_esp build/bootloader/bootloader.bin 0x1000 verify' \
-  -c 'program_esp build/aideck_esp.bin 0x10000 verify reset exit'
+openocd -f ./gapuino_ftdi.cfg -f board/esp-wroom-32.cfg -c 'adapter_khz 20000' -c 'program_esp build/bootloader/bootloader.bin 0x1000 verify' -c 'program_esp build/aideck_esp.bin 0x10000 verify reset exit'
+
 ```
 
 ###### WiFi

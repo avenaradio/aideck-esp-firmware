@@ -27,6 +27,9 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/event_groups.h"
+
 #include "cpx.h"
 
 #define WIFI_TRANSPORT_MTU 1022
@@ -34,6 +37,9 @@
 #if WIFI_TRANSPORT_MTU > CPX_MAX_PAYLOAD_SIZE
     #pragma warn "WIFI MTU bigger than defined by CPX"
 #endif
+
+extern const int WIFI_CONNECTED_BIT;
+extern EventGroupHandle_t s_wifi_event_group;
 
 typedef struct {
     CPXRoutingPacked_t route;

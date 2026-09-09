@@ -27,6 +27,7 @@
 #include "sdkconfig.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/event_groups.h"
 #include "esp_system.h"
 #include "esp_spi_flash.h"
 #include "driver/gpio.h"
@@ -44,7 +45,10 @@
 #include "test.h"
 #include "wifi.h"
 #include "system.h"
+
 #include "osc.h"
+#include "aideck_cpx.h"
+#include "aideck_parameters.h"
 
 /* The LED is connected on GPIO */
 #define BLINK_GPIO 4
@@ -61,27 +65,6 @@ int cpx_and_uart_vprintf(const char * fmt, va_list ap) {
     return len;
 }
 
-static esp_routable_packet_t txp_to_app;
-
-// Send string to app
-void cpx_to_app(const char * data) {
-    if (data == NULL) {
-        return;
-    }
-    size_t length = strlen(data);
-    // Leave room for the terminating '\0'
-    if (length >= sizeof(txp_to_app.data)) {
-        length = sizeof(txp_to_app.data) - 1;
-    }
-    cpxInitRoute(CPX_T_ESP32, CPX_T_STM32, CPX_F_APP, &txp_to_app.route); // Add route to txp_to_app
-    memcpy(txp_to_app.data, data, length);
-    txp_to_app.data[length] = '\0';
-    txp_to_app.dataLength = length + 1;
-    espAppSendToRouterBlocking(&txp_to_app); // Send message
-    return;
-}
-
-
 #define DEBUG_TXD_PIN (GPIO_NUM_0) // Nina 27 /SYSBOOT) => 0
 
 int a = 1;
@@ -97,6 +80,7 @@ void app_main(void)
     esp_log_level_set("COM", ESP_LOG_INFO);
     esp_log_level_set("TEST", ESP_LOG_INFO);
     esp_log_level_set("WIFI", ESP_LOG_INFO);
+    esp_log_level_set("AIDECK_CPX", ESP_LOG_INFO);
 
     ESP_ERROR_CHECK(nvs_flash_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
@@ -129,27 +113,27 @@ void app_main(void)
     espTransportInit();
     uart_transport_init();
     com_init();
-
-    // TODO krri remove test
-    test_init();
-
     wifi_init();
     router_init();
-
     esp_log_set_vprintf(cpx_and_uart_vprintf);
-
     system_init();
-
     discovery_init();
 
-    // TODO: wait for wifii connection
-    vTaskDelay(2000);
+    // Wait for wifi connection
+    xEventGroupWaitBits(
+        s_wifi_event_group,
+        WIFI_CONNECTED_BIT,  // Bit to wait for
+        pdFALSE,             // Do not clear the bit after receiving it
+        pdFALSE,             // Wait for any requested bit
+        portMAX_DELAY        // Wait indefinitely
+    );
+    aideck_parameters_init();
+    aideck_cpx_init();
     osc_start();
 
     while(1) {
         vTaskDelay(2000);
-        char *test_msg = "Hello from the ESPEEEEEE";
-        cpx_to_app(test_msg);
+        sendGotoFixedPositionToStm(1, 1, 1, 5);
     }
     esp_restart();
 }

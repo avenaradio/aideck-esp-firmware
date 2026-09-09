@@ -13,6 +13,8 @@ idf_component_register(
         "system.c"
         "discovery.c"
         "osc.c"
+        "aideck_cpx.c"
+        "aideck_parameters.c"
     INCLUDE_DIRS
         "."
     REQUIRES

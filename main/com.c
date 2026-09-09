@@ -48,6 +48,7 @@
 static xQueueHandle espWiFiCTRLQueue;
 static xQueueHandle espSystemQueue;
 static xQueueHandle espTESTQueue;
+static xQueueHandle espAideckAppQueue;
 
 static esp_routable_packet_t rxp;
 
@@ -71,6 +72,9 @@ static void com_rx(void* _param) {
       case CPX_F_SYSTEM:
         xQueueSend(espSystemQueue, &rxp, (TickType_t) portMAX_DELAY);
         break;
+      case CPX_F_APP:
+        xQueueSend(espAideckAppQueue, &rxp, (TickType_t) portMAX_DELAY);
+        break;
       default:
         ESP_LOGW("COM", "Cannot handle 0x%02X", rxp.route.function);
     }
@@ -81,6 +85,7 @@ void com_init() {
   espWiFiCTRLQueue = xQueueCreate(ESP_WIFI_CTRL_QUEUE_LENGTH, ESP_WIFI_CTRL_QUEUE_SIZE);
   espSystemQueue = xQueueCreate(ESP_SYS_QUEUE_LENGTH, ESP_SYS_QUEUE_SIZE);
   espTESTQueue = xQueueCreate(ESP_TEST_QUEUE_LENGTH, ESP_TEST_QUEUE_SIZE);
+  espAideckAppQueue = xQueueCreate(ESP_TEST_QUEUE_LENGTH, ESP_TEST_QUEUE_SIZE);
 
   startUpEventGroup = xEventGroupCreate();
   xEventGroupClearBits(startUpEventGroup, START_UP_RX_TASK);
@@ -104,4 +109,8 @@ void com_receive_wifi_ctrl_blocking(esp_routable_packet_t * packet) {
 
 void com_receive_system_blocking(esp_routable_packet_t * packet) {
   xQueueReceive(espSystemQueue, packet, (TickType_t) portMAX_DELAY);
+}
+
+void com_receive_aideck_app_blocking(esp_routable_packet_t * packet) {
+  xQueueReceive(espAideckAppQueue, packet, (TickType_t) portMAX_DELAY);
 }
