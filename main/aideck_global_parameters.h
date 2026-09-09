@@ -1,5 +1,5 @@
-#ifndef PARAMETERS_H
-#define PARAMETERS_H
+#ifndef AIDECK_GLOBAL_PARAMETERS_H
+#define AIDECK_GLOBAL_PARAMETERS_H
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
@@ -23,4 +23,4 @@ BaseType_t goto_fix_position_get(GoToFixPosition_t *goto_fix_position);
 
 void aideck_parameters_init(void);
 
-#endif /* PARAMETERS_H */
+#endif /* AIDECK_GLOBAL_PARAMETERS_H */

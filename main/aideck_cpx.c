@@ -5,7 +5,7 @@
 #include "esp_log.h"
 #include "esp_transport.h"
 #include "com.h"
-#include "aideck_parameters.h"
+#include "aideck_global_parameters.h"
 
 typedef enum {
     CPX_IF_INIT = 0,
@@ -50,7 +50,7 @@ static void aideck_receive_cpx_task(void *pvParameters) {
 }
 
 void saveReceivedParameters(float x, float y, float z, float batteryP){
-    //ESP_LOGI("AIDECK_CPX", "Got parameters: x=%.4f, y=%.4f, z=%.4f, batteryP=%.4f", x, y, z, batteryP);
+    ESP_LOGI("AIDECK_CPX", "Got parameters: x=%.4f, y=%.4f, z=%.4f, batteryP=%.4f", x, y, z, batteryP);
     Parameters_t received_parameters = {
         .x = x,
         .y = y,
@@ -65,12 +65,9 @@ void saveReceivedParameters(float x, float y, float z, float batteryP){
 static void aideck_send_cpx_task(void *pvParameters) {
     GoToFixPosition_t goto_fix_position = {0};
     while (1) {
-        goto_fix_position_get(&goto_fix_position);
-        sendGotoFixedPositionToStm(
-            goto_fix_position.x,
-            goto_fix_position.y,
-            goto_fix_position.z
-        );
+        if (goto_fix_position_get(&goto_fix_position) == pdPASS) {
+            sendGotoFixedPositionToStm(goto_fix_position.x, goto_fix_position.y, goto_fix_position.z);
+        }
         vTaskDelay(100);
     }
 }

@@ -48,7 +48,7 @@
 
 #include "osc.h"
 #include "aideck_cpx.h"
-#include "aideck_parameters.h"
+#include "aideck_global_parameters.h"
 
 /* The LED is connected on GPIO */
 #define BLINK_GPIO 4

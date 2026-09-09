@@ -1,7 +1,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "freertos/FreeRTOSConfig.h"
-#include "aideck_parameters.h"
+#include "aideck_global_parameters.h"
 
 QueueHandle_t parameters_queue = NULL;
 QueueHandle_t goto_fix_position_queue = NULL;
