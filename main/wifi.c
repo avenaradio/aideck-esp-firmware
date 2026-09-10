@@ -57,7 +57,7 @@ static char ssid[MAX_SSID_SIZE];
 static char key[MAX_SSID_SIZE];
 
 const int WIFI_CONNECTED_BIT = BIT0;
-static const int WIFI_SOCKET_DISCONNECTED = BIT1;
+const int WIFI_SOCKET_DISCONNECTED = BIT1;
 static const int WIFI_PACKET_WAIT_SEND = BIT2;
 static const int WIFI_PACKET_SENDING = BIT3;
 EventGroupHandle_t s_wifi_event_group = NULL;

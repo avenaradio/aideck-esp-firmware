@@ -65,9 +65,25 @@ int cpx_and_uart_vprintf(const char * fmt, va_list ap) {
     return len;
 }
 
-#define DEBUG_TXD_PIN (GPIO_NUM_0) // Nina 27 /SYSBOOT) => 0
+void wifi_monitor_task(void *arg){
+    while (1) {
+        EventBits_t event_bits = xEventGroupWaitBits(
+            s_wifi_event_group,
+            WIFI_CONNECTED_BIT | WIFI_SOCKET_DISCONNECTED,
+            pdFALSE,        // Do not clear the bit after receiving it
+            pdFALSE,       // Wait for any bit
+            portMAX_DELAY
+        );
+        if (event_bits & WIFI_SOCKET_DISCONNECTED) {
+            ESP_LOGI("SYS", "WIFI disconnected, trying to reconnect...");
+            wifi_init();
+        }
+        vTaskDelay(2000);
+    }
+}
 
-int a = 1;
+
+#define DEBUG_TXD_PIN (GPIO_NUM_0) // Nina 27 /SYSBOOT) => 0
 
 void app_main(void)
 {
@@ -81,6 +97,8 @@ void app_main(void)
     esp_log_level_set("TEST", ESP_LOG_INFO);
     esp_log_level_set("WIFI", ESP_LOG_INFO);
     esp_log_level_set("AIDECK_CPX", ESP_LOG_INFO);
+    esp_log_level_set("esp-osc", ESP_LOG_INFO);
+    esp_log_level_set("osc", ESP_LOG_INFO);
 
     ESP_ERROR_CHECK(nvs_flash_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
@@ -119,6 +137,7 @@ void app_main(void)
     system_init();
     discovery_init();
 
+    xTaskCreate(wifi_monitor_task, "Wifi reconnect", 5000, NULL, 1, NULL);
     // Wait for wifi connection
     xEventGroupWaitBits(
         s_wifi_event_group,
@@ -133,7 +152,6 @@ void app_main(void)
 
     while(1) {
         vTaskDelay(2000);
-        sendGotoFixedPositionToStm(1, 1, 1, 5);
     }
     esp_restart();
 }

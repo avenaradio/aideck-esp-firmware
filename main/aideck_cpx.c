@@ -66,6 +66,7 @@ static void aideck_send_cpx_task(void *pvParameters) {
     GoToFixPosition_t goto_fix_position = {0};
     while (1) {
         if (goto_fix_position_get(&goto_fix_position) == pdPASS) {
+            //ESP_LOGI("AIDECK_CPX", "Got goto_fix_position_get: x=%.4f, y=%.4f, z=%.4f", goto_fix_position.x, goto_fix_position.y, goto_fix_position.z);
             sendGotoFixedPositionToStm(goto_fix_position.x, goto_fix_position.y, goto_fix_position.z);
         }
         vTaskDelay(100);
@@ -77,8 +78,7 @@ static esp_routable_packet_t txp_to_app;
 // TODO add first character to tell which fx should be called
 void sendGotoFixedPositionToStm(float x, float y, float z){
     int parameters_count = 3;
-    ESP_LOGI("AIDECK_CPX", "Sending goto_fix_position to STM x=%.4f, y=%.4f, z=%.4f\n", x, y, z);
-
+    ESP_LOGI("AIDECK_CPX", "Sending goto_fix_position to STM x=%.4f, y=%.4f, z=%.4f", x, y, z);
     cpxInitRoute(CPX_T_ESP32, CPX_T_STM32, CPX_F_APP, &txp_to_app.route); // Add route to txp_to_app
     txp_to_app.data[0] = (uint8_t)CPX_IF_GOTO_FIXED_COORDINATES;
     writeFloatToUint8Array(x, txp_to_app.data, 1);
