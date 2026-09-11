@@ -15,6 +15,7 @@ idf_component_register(
         "osc.c"
         "aideck_cpx.c"
         "aideck_global_parameters.c"
+        "aideck_offset_math.c"
     INCLUDE_DIRS
         "."
     REQUIRES

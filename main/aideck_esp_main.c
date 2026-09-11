@@ -99,6 +99,7 @@ void app_main(void)
     esp_log_level_set("AIDECK_CPX", ESP_LOG_INFO);
     esp_log_level_set("esp-osc", ESP_LOG_INFO);
     esp_log_level_set("osc", ESP_LOG_INFO);
+    esp_log_level_set("OFFSET_MATH", ESP_LOG_INFO);
 
     ESP_ERROR_CHECK(nvs_flash_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());

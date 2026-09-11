@@ -9,7 +9,7 @@
 #include "esp_osc.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "aideck_global_parameters.h"
+#include "aideck_offset_math.h"
 
 #define OSC_ADDRESS "255.255.255.255"
 #define OSC_PORT 9000
@@ -42,7 +42,6 @@ static void sender(void *parameter){
 }
 
 static bool callback(const char *topic, const char *format, esp_osc_value_t *values){
-    GoToFixPosition_t go_to_fix_position = {0};
     //ESP_LOGI(TAG, "got message: %s (%s)", topic, format);
 
     // for (size_t i = 0; i < strlen(format); i++) {
@@ -76,28 +75,33 @@ static bool callback(const char *topic, const char *format, esp_osc_value_t *val
     //     }
     // }
     if (strcmp(topic, "/adm/obj/16/azim") == 0) {
+        azim(values[0].f);
     }
     else if (strcmp(topic, "/adm/obj/16/elev") == 0) {
+        elev(values[0].f);
     }
     else if (strcmp(topic, "/adm/obj/16/dist") == 0) {
+        dist(values[0].f);
     }
     else if (strcmp(topic, "/adm/obj/16/aed") == 0) {
+        aed(values[0].f, values[1].f, values[2].f);
     }
     else if (strcmp(topic, "/adm/obj/16/x") == 0) {
+        x(values[0].f);
     }
     else if (strcmp(topic, "/adm/obj/16/y") == 0) {
+        y(values[0].f);
     }
     else if (strcmp(topic, "/adm/obj/16/z") == 0) {
+        z(values[0].f);
     }
     else if (strcmp(topic, "/adm/obj/16/xy") == 0) {
+        xy(values[0].f, values[1].f);
     }
     else if (strcmp(topic, "/adm/obj/16/xyz") == 0) {
         // just for testing, need to convert into adm space!!!!
-        //ESP_LOGI(TAG, "got message: %s (%s): %f %f %f", topic, format, values[0].f, values[1].f, values[2].f);
-        go_to_fix_position.x = values[0].f;
-        go_to_fix_position.y = values[1].f;
-        go_to_fix_position.z = values[2].f;
-        goto_fix_position_set(&go_to_fix_position);
+        ESP_LOGI(TAG, "got message: %s (%s): %f %f %f", topic, format, values[0].f, values[1].f, values[2].f);
+        xyz(values[0].f, values[1].f, values[2].f);
     }
     // else if (strcmp(topic, "/adm/obj/16/w") == 0) {
     // }
