@@ -87,28 +87,28 @@ BaseType_t set_goto_from_cartesian(AdmCartesian_t *cart);
 
 // -------------------------------- ADM-OSC processing ----------------------------------------- //
 void azim(float azimuth) {
-    get_coords_from_parameters(&adm_polar, &adm_cartesian);
+    //get_coords_from_parameters(&adm_polar, &adm_cartesian);
     adm_polar.azimuth = azimuth;
     adm_polar_to_cartesian(&adm_polar, &adm_cartesian);
     set_goto_from_cartesian(&adm_cartesian);
 }
 
 void elev(float elevation) {
-    get_coords_from_parameters(&adm_polar, &adm_cartesian);
+    //get_coords_from_parameters(&adm_polar, &adm_cartesian);
     adm_polar.elevation = elevation;
     adm_polar_to_cartesian(&adm_polar, &adm_cartesian);
     set_goto_from_cartesian(&adm_cartesian);
 }
 
 void dist(float distance) {
-    get_coords_from_parameters(&adm_polar, &adm_cartesian);
+    //get_coords_from_parameters(&adm_polar, &adm_cartesian);
     adm_polar.distance = distance;
     adm_polar_to_cartesian(&adm_polar, &adm_cartesian);
     set_goto_from_cartesian(&adm_cartesian);
 }
 
 void aed(float azimuth, float elevation, float distance) {
-    get_coords_from_parameters(&adm_polar, &adm_cartesian);
+    //get_coords_from_parameters(&adm_polar, &adm_cartesian);
     adm_polar.azimuth = azimuth;
     adm_polar.elevation = elevation;
     adm_polar.distance = distance;
@@ -117,38 +117,43 @@ void aed(float azimuth, float elevation, float distance) {
 }
 
 void x(float x_position) {
-    get_coords_from_parameters(&adm_polar, &adm_cartesian);
+    //get_coords_from_parameters(&adm_polar, &adm_cartesian);
     adm_cartesian.x = x_position;
+    adm_cartesian_to_polar(&adm_cartesian, &adm_polar);
     set_goto_from_cartesian(&adm_cartesian);
 }
 
 void y(float y_position) {
-    get_coords_from_parameters(&adm_polar, &adm_cartesian);
+    //get_coords_from_parameters(&adm_polar, &adm_cartesian);
     adm_cartesian.y = y_position;
+    adm_cartesian_to_polar(&adm_cartesian, &adm_polar);
     set_goto_from_cartesian(&adm_cartesian);
 }
 
 void z(float z_position) {
-    get_coords_from_parameters(&adm_polar, &adm_cartesian);
+    //get_coords_from_parameters(&adm_polar, &adm_cartesian);
     adm_cartesian.z = z_position;
+    adm_cartesian_to_polar(&adm_cartesian, &adm_polar);
     set_goto_from_cartesian(&adm_cartesian);
 }
 
 void xy(float x_position, float y_position) {
-    get_coords_from_parameters(&adm_polar, &adm_cartesian);
+    //get_coords_from_parameters(&adm_polar, &adm_cartesian);
     adm_cartesian.x = x_position;
     adm_cartesian.y = y_position;
+    adm_cartesian_to_polar(&adm_cartesian, &adm_polar);
     set_goto_from_cartesian(&adm_cartesian);
 }
 
 void xyz(float x_position, float y_position, float z_position) {
-    ESP_LOGI(TAG, "Starting xyz() with x=%f y=%f z=%f", x_position, y_position, z_position);
-    get_coords_from_parameters(&adm_polar, &adm_cartesian);
-    ESP_LOGI(TAG, "Loaded from parameters x=%f y=%f z=%f", adm_cartesian.x, adm_cartesian.y, adm_cartesian.z);
-    ESP_LOGI(TAG, "Loaded from parameters a=%f e=%f d=%f", adm_polar.azimuth, adm_polar.elevation, adm_polar.distance);
+    //ESP_LOGI(TAG, "Starting xyz() with x=%f y=%f z=%f", x_position, y_position, z_position);
+    //get_coords_from_parameters(&adm_polar, &adm_cartesian);
+    //ESP_LOGI(TAG, "Loaded from parameters x=%f y=%f z=%f", adm_cartesian.x, adm_cartesian.y, adm_cartesian.z);
+    //ESP_LOGI(TAG, "Loaded from parameters a=%f e=%f d=%f", adm_polar.azimuth, adm_polar.elevation, adm_polar.distance);
     adm_cartesian.x = x_position;
     adm_cartesian.y = y_position;
     adm_cartesian.z = z_position;
+    adm_cartesian_to_polar(&adm_cartesian, &adm_polar);
     set_goto_from_cartesian(&adm_cartesian);
 }
 
