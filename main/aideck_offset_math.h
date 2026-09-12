@@ -1,4 +1,17 @@
 
+#include "freertos/portmacro.h"
+
+typedef struct {
+    double azimuth;
+    double elevation;
+    double distance;
+} AdmPolar_t;
+
+typedef struct {
+    double x;
+    double y;
+    double z;
+} AdmCartesian_t;
 
 void azim(float azimuth);
 void elev(float elevation);
@@ -10,3 +23,8 @@ void y(float y_position);
 void z(float z_position);
 void xy(float x_position, float y_position);
 void xyz(float x_position, float y_position, float z_position);
+
+void w(float width);
+
+float get_w(void);
+BaseType_t get_coords_from_parameters(AdmPolar_t *polar, AdmCartesian_t *cart);

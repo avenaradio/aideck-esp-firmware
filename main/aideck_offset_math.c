@@ -37,44 +37,20 @@ Drone coords
 #include "aideck_global_parameters.h"
 #include "esp_log.h"
 #include "freertos/projdefs.h"
+#include "aideck_offset_math.h"
 #define TAG "OFFSET_MATH"
+
+#define ADM_DEG_TO_RAD (M_PI / 180.0)
+#define ADM_RAD_TO_DEG (180.0 / M_PI)
 
 // Coords of drone when at head position in m
 #define X_OFFSET 0.4295f
 #define Y_OFFSET 0.1324f
 #define Z_OFFSET 1.0f
 // ADM-OSC orientation, x=1 is equivalent to X_WIDTH in m
-#define X_WIDTH 1.1f
-#define Y_WIDTH 0.8f
-#define Z_WIDTH Z_OFFSET
-
-#define ADM_DEG_TO_RAD (M_PI / 180.0)
-#define ADM_RAD_TO_DEG (180.0 / M_PI)
-
-/*
- * ADM-OSC polar coordinates:
- *   azimuth   : degrees, 0° straight ahead, positive to the left
- *   elevation : degrees, +90° upwards
- *   distance  : normalized radius, 0.0 to 1.0
- */
-typedef struct {
-    double azimuth;
-    double elevation;
-    double distance;
-} AdmPolar_t;
-
-/*
- * ADM-OSC Cartesian coordinates:
- *   x = right
- *   y = forward
- *   z = up
- * Each coordinate is normally in the range [-1.0, 1.0].
- */
-typedef struct {
-    double x;
-    double y;
-    double z;
-} AdmCartesian_t;
+float x_width = 1.1f;
+float y_width = 0.8f;
+float z_width = Z_OFFSET;
 
 AdmPolar_t adm_polar = {0};
 AdmCartesian_t adm_cartesian = {0};
@@ -157,6 +133,16 @@ void xyz(float x_position, float y_position, float z_position) {
     set_goto_from_cartesian(&adm_cartesian);
 }
 
+void w(float width){
+    x_width = width;
+    y_width = width;
+    z_width = width;
+}
+
+float get_w(void){
+    return z_width;
+}
+
 //--------------------------------------- HELPER FUNCTIONS --------------------------------------------//
 
 /*
@@ -235,9 +221,9 @@ BaseType_t get_coords_from_parameters(AdmPolar_t *polar, AdmCartesian_t *cart){
     float y = parameters.y - Y_OFFSET;
     float z = parameters.z - Z_OFFSET;
     // Normalize
-    cart->x = x / X_WIDTH;
-    cart->y = y / Y_WIDTH;
-    cart->z = z / Z_WIDTH;
+    cart->x = x / x_width;
+    cart->y = y / x_width;
+    cart->z = z / x_width;
 
     // Also get the polar coords
     if (adm_cartesian_to_polar(cart, polar) == pdTRUE){
@@ -255,9 +241,9 @@ BaseType_t set_goto_from_cartesian(AdmCartesian_t *cart){
     if (cart == NULL) {return pdFALSE;}
     GoToFixPosition_t new_position = {0};
     // Denormalize
-    float x = cart->x * X_WIDTH;
-    float y = cart->y * Y_WIDTH;
-    float z = cart->z * Z_WIDTH;
+    float x = cart->x * x_width;
+    float y = cart->y * x_width;
+    float z = cart->z * x_width;
     //ESP_LOGI(TAG, "set_goto_from_cartesian() denormalized: x=%f y=%f z=%f", x, y, z);
     //Turn xy +90°(left) & offset
     new_position.x = x + X_OFFSET;
