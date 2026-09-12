@@ -42,7 +42,7 @@ static void sender(void *parameter){
 }
 
 static bool callback(const char *topic, const char *format, esp_osc_value_t *values){
-    //ESP_LOGI(TAG, "got message: %s (%s)", topic, format);
+    ESP_LOGI(TAG, "got message: %s (%s)", topic, format);
 
     // for (size_t i = 0; i < strlen(format); i++) {
     //     switch (format[i]) {
@@ -100,7 +100,7 @@ static bool callback(const char *topic, const char *format, esp_osc_value_t *val
     }
     else if (strcmp(topic, "/adm/obj/16/xyz") == 0) {
         // just for testing, need to convert into adm space!!!!
-        ESP_LOGI(TAG, "got message: %s (%s): %f %f %f", topic, format, values[0].f, values[1].f, values[2].f);
+        //ESP_LOGI(TAG, "got message: %s (%s): %f %f %f", topic, format, values[0].f, values[1].f, values[2].f);
         xyz(values[0].f, values[1].f, values[2].f);
     }
     // else if (strcmp(topic, "/adm/obj/16/w") == 0) {

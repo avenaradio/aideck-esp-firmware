@@ -246,19 +246,19 @@ BaseType_t get_coords_from_parameters(AdmPolar_t *polar, AdmCartesian_t *cart){
  * Takes adm cartesian coords and sends drone goto fixed position
  */
 BaseType_t set_goto_from_cartesian(AdmCartesian_t *cart){
-    ESP_LOGI(TAG, "set_goto_from_cartesian() started with: x=%f y=%f z=%f", cart->x, cart->y, cart->z);
+    //ESP_LOGI(TAG, "set_goto_from_cartesian() started with: x=%f y=%f z=%f", cart->x, cart->y, cart->z);
     if (cart == NULL) {return pdFALSE;}
     GoToFixPosition_t new_position = {0};
     // Denormalize
     float x = cart->x * X_WIDTH;
     float y = cart->y * Y_WIDTH;
     float z = cart->z * Z_WIDTH;
-    ESP_LOGI(TAG, "set_goto_from_cartesian() denormalized: x=%f y=%f z=%f", x, y, z);
+    //ESP_LOGI(TAG, "set_goto_from_cartesian() denormalized: x=%f y=%f z=%f", x, y, z);
     //Turn xy +90°(left) & offset
     new_position.x = x + X_OFFSET;
     new_position.y = y + Y_OFFSET;
     new_position.z = z + Z_OFFSET;
-    ESP_LOGI(TAG, "set_goto_from_cartesian() minus offset: x=%f y=%f z=%f", new_position.x, new_position.y, new_position.z);
+    //ESP_LOGI(TAG, "set_goto_from_cartesian() minus offset: x=%f y=%f z=%f", new_position.x, new_position.y, new_position.z);
     BaseType_t result = goto_fix_position_set(&new_position);
     return result;
 }

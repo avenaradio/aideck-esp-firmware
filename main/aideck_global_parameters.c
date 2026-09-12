@@ -8,7 +8,7 @@ QueueHandle_t goto_fix_position_queue = NULL;
 
 void aideck_parameters_init(void){
     parameters_queue = xQueueCreate(1, sizeof(Parameters_t));
-    goto_fix_position_queue = xQueueCreate(30, sizeof(GoToFixPosition_t));
+    goto_fix_position_queue = xQueueCreate(100, sizeof(GoToFixPosition_t));
 }
 
 BaseType_t parameters_set(const Parameters_t *parameters){
@@ -27,7 +27,7 @@ BaseType_t parameters_get(Parameters_t *parameters){
     return xQueuePeek(
         parameters_queue,
         parameters,
-        portMAX_DELAY
+        100
     );
 }
 
@@ -35,7 +35,6 @@ BaseType_t goto_fix_position_set(const GoToFixPosition_t *goto_fix_position){
     if(goto_fix_position == NULL || goto_fix_position_queue == NULL){
         return pdFALSE;
     }
-    // Queue length is 1, so this replaces the previous value.
     return xQueueSend(goto_fix_position_queue, goto_fix_position, 100);
 }
 
@@ -43,7 +42,6 @@ BaseType_t goto_fix_position_get(GoToFixPosition_t *goto_fix_position){
     if (goto_fix_position == NULL || goto_fix_position_queue == NULL){
         return pdFALSE;
     }
-    // Peek keeps the latest value in the queue.
     return xQueueReceive(
         goto_fix_position_queue,
         goto_fix_position,

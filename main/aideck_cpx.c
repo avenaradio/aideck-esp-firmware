@@ -50,7 +50,7 @@ static void aideck_receive_cpx_task(void *pvParameters) {
 }
 
 void saveReceivedParameters(float x, float y, float z, float batteryP){
-    ESP_LOGI("AIDECK_CPX", "Got parameters: x=%.4f, y=%.4f, z=%.4f, batteryP=%.4f", x, y, z, batteryP);
+    //ESP_LOGI("AIDECK_CPX", "Got parameters: x=%.4f, y=%.4f, z=%.4f, batteryP=%.4f", x, y, z, batteryP);
     Parameters_t received_parameters = {
         .x = x,
         .y = y,
@@ -69,7 +69,7 @@ static void aideck_send_cpx_task(void *pvParameters) {
             //ESP_LOGI("AIDECK_CPX", "Got goto_fix_position_get: x=%.4f, y=%.4f, z=%.4f", goto_fix_position.x, goto_fix_position.y, goto_fix_position.z);
             sendGotoFixedPositionToStm(goto_fix_position.x, goto_fix_position.y, goto_fix_position.z);
         }
-        vTaskDelay(100);
+        vTaskDelay(10);
     }
 }
 
