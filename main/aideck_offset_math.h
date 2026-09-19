@@ -24,7 +24,6 @@ void z(float z_position);
 void xy(float x_position, float y_position);
 void xyz(float x_position, float y_position, float z_position);
 
-void w(float width);
-
-float get_w(void);
+void dmax(float dmax);
+float get_dmax(void);
 BaseType_t get_coords_from_parameters(AdmPolar_t *polar, AdmCartesian_t *cart);

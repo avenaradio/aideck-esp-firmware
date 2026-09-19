@@ -133,13 +133,13 @@ void xyz(float x_position, float y_position, float z_position) {
     set_goto_from_cartesian(&adm_cartesian);
 }
 
-void w(float width){
-    x_width = width;
-    y_width = width;
-    z_width = width;
+void dmax(float dmax){
+    x_width = dmax;
+    y_width = dmax;
+    z_width = dmax;
 }
 
-float get_w(void){
+float get_dmax(void){
     return z_width;
 }
 
@@ -148,8 +148,7 @@ float get_w(void){
 /*
  * Clamp a value to the given range.
  */
-static double clamp_double(double value, double min, double max)
-{
+static double clamp_double(double value, double min, double max){
     if (value < min) return min;
     if (value > max) return max;
     return value;

@@ -180,12 +180,12 @@ static bool callback(const char *topic, const char *format, esp_osc_value_t *val
             ESP_LOGI(TAG, "OSC send topic=%s format=%s result=%s", topic, format, result ? "success" : "failed");
         }
     }
-    else if (strcmp(topic, "/adm/obj/16/w") == 0) {
+    else if (strcmp(topic, "/adm/obj/16/dmax") == 0) {
         if (strcmp(format, "f") == 0) {
             //ESP_LOGI(TAG, "got message: %s (%s): %f", topic, format, values[0].f);
-            w(values[0].f);
+            dmax(values[0].f);
         } else {
-            float values[1] = {get_w()};
+            float values[1] = {get_dmax()};
             bool result = osc_send_floats(topic, "f", values);
             ESP_LOGI(TAG, "OSC send topic=%s format=%s result=%s", topic, format, result ? "success" : "failed");
         }
