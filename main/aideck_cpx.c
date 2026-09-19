@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <string.h>
 
 #include "freertos/FreeRTOS.h"
@@ -90,41 +91,59 @@ void sendGotoFixedPositionToStm(float x, float y, float z){
 
 //------------------------------------- HELPER FUNCTIONS ----------------------------------------------------//
 
-/**
- * Converts a float into an int32_t by multiplying it by 10,000,
- * then writes the 4 bytes into a uint8_t array in MSB-first order.
- *
- * @param value     Float value to convert
- * @param array     Array to write into
- * @param position  Starting position in the array
- */
-void writeFloatToUint8Array(float value, uint8_t array[], uint16_t position){
-    int32_t converted_value = (int32_t)(value * 10000.0f);
-    uint32_t bytes = (uint32_t)converted_value;
+// /**
+//  * Converts a float into an int32_t by multiplying it by 10,000,
+//  * then writes the 4 bytes into a uint8_t array in MSB-first order.
+//  *
+//  * @param value     Float value to convert
+//  * @param array     Array to write into
+//  * @param position  Starting position in the array
+//  */
+// void writeFloatToUint8Array(float value, uint8_t array[], uint16_t position){
+//     int32_t converted_value = (int32_t)(value * 10000.0f);
+//     uint32_t bytes = (uint32_t)converted_value;
 
-    array[position + 0] = (uint8_t)((bytes >> 24) & 0xFF);
-    array[position + 1] = (uint8_t)((bytes >> 16) & 0xFF);
-    array[position + 2] = (uint8_t)((bytes >> 8) & 0xFF);
-    array[position + 3] = (uint8_t)(bytes & 0xFF);
+//     array[position + 0] = (uint8_t)((bytes >> 24) & 0xFF);
+//     array[position + 1] = (uint8_t)((bytes >> 16) & 0xFF);
+//     array[position + 2] = (uint8_t)((bytes >> 8) & 0xFF);
+//     array[position + 3] = (uint8_t)(bytes & 0xFF);
+// }
+
+
+
+void writeFloatToUint8Array(float value, uint8_t array[], uint16_t position){
+    if (sizeof(float) != 4){
+        return;
+    }
+    memcpy(&array[position], &value, sizeof(float));
 }
 
-/**
- * Reads 4 MSB-first bytes from a uint8_t array,
- * converts them to an int32_t, and divides by 10,000
- * to recover the original float value.
- *
- * @param array     Array to read from
- * @param position  Starting position in the array
- * @return          Reconstructed float value
- */
-float readUint8ArrayToFloat(const uint8_t array[], uint16_t position){
-    uint32_t bytes =
-        ((uint32_t)array[position + 0] << 24) |
-        ((uint32_t)array[position + 1] << 16) |
-        ((uint32_t)array[position + 2] << 8)  |
-        ((uint32_t)array[position + 3]);
+// /**
+//  * Reads 4 MSB-first bytes from a uint8_t array,
+//  * converts them to an int32_t, and divides by 10,000
+//  * to recover the original float value.
+//  *
+//  * @param array     Array to read from
+//  * @param position  Starting position in the array
+//  * @return          Reconstructed float value
+//  */
+// float readUint8ArrayToFloat(const uint8_t array[], uint16_t position){
+//     uint32_t bytes =
+//         ((uint32_t)array[position + 0] << 24) |
+//         ((uint32_t)array[position + 1] << 16) |
+//         ((uint32_t)array[position + 2] << 8)  |
+//         ((uint32_t)array[position + 3]);
 
-    int32_t converted_value = (int32_t)bytes;
+//     int32_t converted_value = (int32_t)bytes;
 
-    return (float)converted_value / 10000.0f;
+//     return (float)converted_value / 10000.0f;
+// }
+
+float readUint8ArrayToFloat(const uint8_t array[],uint16_t position){
+    float value;
+    if (sizeof(float) != 4){
+        return 0.0f;
+    }
+    memcpy(&value, &array[position], sizeof(value));
+    return value;
 }
