@@ -12,9 +12,9 @@ idf_component_register(
         "cpx.c"
         "system.c"
         "discovery.c"
-        "osc.c"
+        "aideck_osc.c"
         "aideck_cpx.c"
-        "aideck_global_parameters.c"
+        "aideck_global_queues.c"
         "aideck_offset_math.c"
     INCLUDE_DIRS
         "."

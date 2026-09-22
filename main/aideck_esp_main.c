@@ -46,9 +46,9 @@
 #include "wifi.h"
 #include "system.h"
 
-#include "osc.h"
+#include "aideck_osc.h"
 #include "aideck_cpx.h"
-#include "aideck_global_parameters.h"
+#include "aideck_global_queues.h"
 
 /* The LED is connected on GPIO */
 #define BLINK_GPIO 4
@@ -65,22 +65,22 @@ int cpx_and_uart_vprintf(const char * fmt, va_list ap) {
     return len;
 }
 
-void wifi_monitor_task(void *arg){
-    while (1) {
-        EventBits_t event_bits = xEventGroupWaitBits(
-            s_wifi_event_group,
-            WIFI_CONNECTED_BIT | WIFI_SOCKET_DISCONNECTED,
-            pdFALSE,        // Do not clear the bit after receiving it
-            pdFALSE,       // Wait for any bit
-            portMAX_DELAY
-        );
-        if (event_bits & WIFI_SOCKET_DISCONNECTED) {
-            ESP_LOGI("SYS", "WIFI disconnected, trying to reconnect...");
-            wifi_init();
-        }
-        vTaskDelay(2000);
-    }
-}
+// void wifi_monitor_task(void *arg){
+//     while (1) {
+//         EventBits_t event_bits = xEventGroupWaitBits(
+//             s_wifi_event_group,
+//             WIFI_CONNECTED_BIT | WIFI_SOCKET_DISCONNECTED,
+//             pdFALSE,        // Do not clear the bit after receiving it
+//             pdFALSE,       // Wait for any bit
+//             portMAX_DELAY
+//         );
+//         if (event_bits & WIFI_SOCKET_DISCONNECTED) {
+//             ESP_LOGI("SYS", "WIFI disconnected, trying to reconnect...");
+//             wifi_init();
+//         }
+//         vTaskDelay(2000);
+//     }
+// }
 
 
 #define DEBUG_TXD_PIN (GPIO_NUM_0) // Nina 27 /SYSBOOT) => 0
@@ -138,7 +138,7 @@ void app_main(void)
     system_init();
     discovery_init();
 
-    xTaskCreate(wifi_monitor_task, "Wifi reconnect", 5000, NULL, 1, NULL);
+    // xTaskCreate(wifi_monitor_task, "Wifi reconnect", 5000, NULL, 1, NULL);
     // Wait for wifi connection
     xEventGroupWaitBits(
         s_wifi_event_group,
@@ -147,9 +147,9 @@ void app_main(void)
         pdFALSE,             // Wait for any requested bit
         portMAX_DELAY        // Wait indefinitely
     );
-    aideck_parameters_init();
+    global_parameters_init();
     aideck_cpx_init();
-    osc_start();
+    osc_init();
 
     while(1) {
         vTaskDelay(2000);

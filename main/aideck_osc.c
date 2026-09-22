@@ -1,4 +1,4 @@
-#include "osc.h"
+#include "aideck_osc.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -26,7 +26,7 @@ static esp_osc_target_t target;
 static bool callback(const char *topic, const char *format, esp_osc_value_t *values);
 static void receiver(void *parameter);
 
-void osc_start(void){
+void osc_init(void){
     target = esp_osc_target(OSC_OUT_ADDRESS, OSC_OUT_PORT);
     esp_osc_init(&client, OSC_BUFFER_SIZE, OSC_IN_PORT);
     // xTaskCreatePinnedToCore(sender, "sender", 4096, NULL, 10, NULL, 1);
