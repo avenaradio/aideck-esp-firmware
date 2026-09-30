@@ -44,12 +44,12 @@ Drone coords
 #define ADM_RAD_TO_DEG (180.0 / M_PI)
 
 // Coords of drone when at head position in m
-#define X_OFFSET 0.4295f
-#define Y_OFFSET 0.1324f
-#define Z_OFFSET 1.0f
+#define X_OFFSET 0.0f
+#define Y_OFFSET 0.0f
+#define Z_OFFSET 1.7f
 // ADM-OSC orientation, x=1 is equivalent to X_WIDTH in m
-float x_width = 1.1f;
-float y_width = 0.8f;
+float x_width = 2.0f;
+float y_width = 2.0f;
 float z_width = Z_OFFSET;
 
 AdmPolar_t adm_polar = {0};
@@ -221,8 +221,8 @@ BaseType_t get_coords_from_parameters(AdmPolar_t *polar, AdmCartesian_t *cart){
     float z = parameters.z - Z_OFFSET;
     // Normalize
     cart->x = x / x_width;
-    cart->y = y / x_width;
-    cart->z = z / x_width;
+    cart->y = y / y_width;
+    cart->z = z / z_width;
 
     // Also get the polar coords
     if (adm_cartesian_to_polar(cart, polar) == pdTRUE){
@@ -241,8 +241,8 @@ BaseType_t add_goto_to_queue(AdmCartesian_t *cart){
     GoToPosition_t new_position = {0};
     // Denormalize
     float x = cart->x * x_width;
-    float y = cart->y * x_width;
-    float z = cart->z * x_width;
+    float y = cart->y * y_width;
+    float z = cart->z * z_width;
     //ESP_LOGI(TAG, "set_goto_from_cartesian() denormalized: x=%f y=%f z=%f", x, y, z);
     new_position.x = x + X_OFFSET;
     new_position.y = y + Y_OFFSET;

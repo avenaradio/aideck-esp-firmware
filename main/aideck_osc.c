@@ -12,8 +12,8 @@
 #include "aideck_offset_math.h"
 
 
-#define OSC_IN_PORT 4001
-#define OSC_OUT_PORT 4002
+#define OSC_IN_PORT 9001
+#define OSC_OUT_PORT 9002
 #define OSC_OUT_ADDRESS "255.255.255.255" // 192.168.178.255 // 255.255.255.255
 #define OSC_BUFFER_SIZE 1024
 
@@ -23,7 +23,7 @@ static esp_osc_client_t client;
 static esp_osc_target_t target;
 
 //static void sender(void *parameter);
-static bool callback(const char *topic, const char *format, esp_osc_value_t *values);
+static bool osc_callback(const char *topic, const char *format, esp_osc_value_t *values);
 static void receiver(void *parameter);
 
 void osc_init(void){
@@ -59,7 +59,7 @@ bool osc_send_floats(const char *topic, const char *format, float *values){
     }
 }
 
-static bool callback(const char *topic, const char *format, esp_osc_value_t *values){
+static bool osc_callback(const char *topic, const char *format, esp_osc_value_t *values){
     ESP_LOGI(TAG, "got message: %s (%s)", topic, format);
     AdmPolar_t polar = {0};
     AdmCartesian_t cart = {0};
@@ -197,6 +197,6 @@ static void receiver(void *parameter){
     (void)parameter;
 
     while(1){
-        esp_osc_receive(&client, callback);
+        esp_osc_receive(&client, osc_callback);
     }
 }
