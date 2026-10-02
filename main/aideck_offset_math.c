@@ -48,9 +48,10 @@ Drone coords
 #define Y_OFFSET 0.0f
 #define Z_OFFSET 1.7f
 // ADM-OSC orientation, x=1 is equivalent to X_WIDTH in m
-float x_width = 1.7f;
-float y_width = 1.7f;
-float z_width = 1.7f;
+// float x_width = 1.7f;
+// float y_width = 1.7f;
+// float z_width = 1.7f;
+float custom_dmax = 0.0f;
 
 AdmPolar_t adm_polar = {0};
 AdmCartesian_t adm_cartesian = {0};
@@ -135,13 +136,22 @@ void xyz(float x_position, float y_position, float z_position) {
 }
 
 void dmax(float dmax){
-    x_width = dmax;
-    y_width = dmax;
-    z_width = dmax;
+    float clamp_max = 0.0f;
+    if (global_constants.z_max_positive < global_constants.z_max_negative) {
+        clamp_max = global_constants.z_max_positive;
+    } else {
+        clamp_max = global_constants.z_max_negative;
+    }
+    dmax = clamp_float(dmax, 0.0f, clamp_max); // Prevent setting flight radius higher than z_max...
+    custom_dmax = dmax;
 }
 
 float get_dmax(void){
-    return z_width;
+    if (custom_dmax > 0.0f){
+        return custom_dmax;
+    } else {
+        return global_constants.z_max_positive;
+    }
 }
 
 //--------------------------------------- HELPER FUNCTIONS --------------------------------------------//
@@ -221,9 +231,9 @@ BaseType_t get_coords_from_parameters(AdmPolar_t *polar, AdmCartesian_t *cart){
     float y = parameters.y - Y_OFFSET;
     float z = parameters.z - Z_OFFSET;
     // Normalize
-    cart->x = x / x_width;
-    cart->y = y / y_width;
-    cart->z = z / z_width;
+    cart->x = x / custom_dmax;
+    cart->y = y / custom_dmax;
+    cart->z = z / custom_dmax;
 
     // Also get the polar coords
     if (adm_cartesian_to_polar(cart, polar) == pdTRUE){
@@ -241,9 +251,31 @@ BaseType_t add_goto_to_queue(AdmCartesian_t *cart){
     if (cart == NULL) {return pdFALSE;}
     GoToPosition_t new_position = {0};
     // Denormalize
-    float x = clamp_float(cart->x, -1.0f, 1.0f) * x_width;
-    float y = clamp_float(cart->y, -1.0f, 1.0f) * y_width;
-    float z = clamp_float(cart->z, -1.0f, 1.0f) * z_width;
+    float x = 0.0f;
+    float y = 0.0f;
+    float z = 0.0f;
+    if (custom_dmax > 0.0f){
+        x = clamp_float(cart->x, -1.0f, 1.0f) * custom_dmax;
+        y = clamp_float(cart->y, -1.0f, 1.0f) * custom_dmax;
+        z = clamp_float(cart->z, -1.0f, 1.0f) * custom_dmax;
+    } else {
+        if (cart->x < 0.0f){
+            x = clamp_float(cart->x, -1.0f, 1.0f) * global_constants.x_max_negative;
+        } else {
+            x = clamp_float(cart->x, -1.0f, 1.0f) * global_constants.x_max_positive;
+        }
+        if (cart->y < 0.0f){
+            y = clamp_float(cart->y, -1.0f, 1.0f) * global_constants.y_max_negative;
+        } else {
+            x = clamp_float(cart->x, -1.0f, 1.0f) * global_constants.x_max_positive;
+        }
+        if (cart->z < 0.0f){
+            z = clamp_float(cart->z, -1.0f, 1.0f) * global_constants.z_max_negative;
+        } else {
+            x = clamp_float(cart->x, -1.0f, 1.0f) * global_constants.x_max_positive;
+        }
+    }
+    
     //ESP_LOGI(TAG, "set_goto_from_cartesian() denormalized: x=%f y=%f z=%f", x, y, z);
     new_position.x = x + X_OFFSET;
     new_position.y = y + Y_OFFSET;

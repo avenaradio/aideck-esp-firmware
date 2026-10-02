@@ -6,6 +6,8 @@
 QueueHandle_t parameters_queue = NULL;
 QueueHandle_t goto_fix_position_queue = NULL;
 
+Constants_t global_constants = {0};
+
 void global_parameters_init(void){
     parameters_queue = xQueueCreate(1, sizeof(Parameters_t));
     goto_fix_position_queue = xQueueCreate(100, sizeof(GoToPosition_t));
