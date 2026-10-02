@@ -11,9 +11,12 @@
 #include "freertos/task.h"
 #include "aideck_offset_math.h"
 
+#include "aideck_global_queues.h"
+#include "xtensa/config/specreg.h"
+
 
 #define OSC_IN_PORT 9001
-#define OSC_OUT_PORT 9002
+#define OSC_OUT_PORT 9001
 #define OSC_OUT_ADDRESS "255.255.255.255" // 192.168.178.255 // 255.255.255.255
 #define OSC_BUFFER_SIZE 1024
 
@@ -42,25 +45,39 @@ void osc_init(void){
 //     }
 // }
 
-bool osc_send_floats(const char *topic, const char *format, float *values){
+//TODO use esp_osc_send_v instead?
+void osc_send_floats(const char *topic, const char *format, float *values){
     if (topic == NULL || format == NULL || values == NULL) {
-        return false;
+        ESP_LOGW(TAG, "osc_send_floats: OSC send failed, a parameter is NULL.");
+        return;
     }
     size_t length = strlen(format);
+    bool ok = false;
     switch (length) {
         case 1:
-            return esp_osc_send(&client, &target, topic, format, values[0]);
+            ok = esp_osc_send(&client, &target, topic, format, values[0]);
+            break;
         case 2:
-            return esp_osc_send(&client, &target, topic, format, values[0], values[1]);
+            ok = esp_osc_send(&client, &target, topic, format, values[0], values[1]);
+            break;
         case 3:
-            return esp_osc_send(&client, &target, topic, format, values[0], values[1], values[2]);
+            ok = esp_osc_send(&client, &target, topic, format, values[0], values[1], values[2]);
+            break;
         default:
-            return false;
+            ok = false;
+            break;
+    }
+    if (!ok) {
+        ESP_LOGW(TAG, "OSC send failed: %s (%s)", topic, format);
     }
 }
 
+bool osc_send_target(float values[]){
+    return esp_osc_send(&client, &target, "/drone/target_position", "fff", values[0], values[1], values[2]);
+}
+
 static bool osc_callback(const char *topic, const char *format, esp_osc_value_t *values){
-    ESP_LOGI(TAG, "got message: %s (%s)", topic, format);
+    // ESP_LOGI(TAG, "got message: %s (%s)", topic, format);
     AdmPolar_t polar = {0};
     AdmCartesian_t cart = {0};
 
@@ -94,6 +111,8 @@ static bool osc_callback(const char *topic, const char *format, esp_osc_value_t 
     //         break;
     //     }
     // }
+    esp_osc_send(&client, &target, "/drone/osc_received" , "s", topic);
+
     if (strcmp(topic, "/adm/obj/16/azim") == 0) {
         if (strcmp(format, "f") == 0) {
             azim(values[0].f);
@@ -128,8 +147,9 @@ static bool osc_callback(const char *topic, const char *format, esp_osc_value_t 
         } else {
             get_coords_from_parameters(&polar, &cart);
             float values[3] = {polar.azimuth, polar.elevation, polar.distance};
-            bool result = osc_send_floats(topic, "fff", values);
-            ESP_LOGI(TAG, "OSC send topic=%s format=%s result=%s", topic, format, result ? "success" : "failed");
+            //bool result = 
+            osc_send_floats(topic, "fff", values);
+            // ESP_LOGI(TAG, "OSC send topic=%s format=%s result=%s", topic, format, result ? "success" : "failed");
         }
     }
     else if (strcmp(topic, "/adm/obj/16/x") == 0) {
@@ -149,7 +169,6 @@ static bool osc_callback(const char *topic, const char *format, esp_osc_value_t 
             float values[1] = {cart.y};
             osc_send_floats(topic, "f", values);
         }
-        y(values[0].f);
     }
     else if (strcmp(topic, "/adm/obj/16/z") == 0) {
         if (strcmp(format, "f") == 0) {
@@ -176,8 +195,9 @@ static bool osc_callback(const char *topic, const char *format, esp_osc_value_t 
         } else {
             get_coords_from_parameters(&polar, &cart);
             float values[3] = {cart.x, cart.y, cart.z};
-            bool result = osc_send_floats(topic, "fff", values);
-            ESP_LOGI(TAG, "OSC send topic=%s format=%s result=%s", topic, format, result ? "success" : "failed");
+            //bool result = 
+            osc_send_floats(topic, "fff", values);
+            // ESP_LOGI(TAG, "OSC send topic=%s format=%s result=%s", topic, format, result ? "success" : "failed");
         }
     }
     else if (strcmp(topic, "/adm/obj/16/dmax") == 0) {
@@ -186,17 +206,41 @@ static bool osc_callback(const char *topic, const char *format, esp_osc_value_t 
             dmax(values[0].f);
         } else {
             float values[1] = {get_dmax()};
-            bool result = osc_send_floats(topic, "f", values);
-            ESP_LOGI(TAG, "OSC send topic=%s format=%s result=%s", topic, format, result ? "success" : "failed");
+            //bool result = 
+            osc_send_floats(topic, "f", values);
+            // ESP_LOGI(TAG, "OSC send topic=%s format=%s result=%s", topic, format, result ? "success" : "failed");
         }
+    }
+    // DRONE SPECIFIC OSC
+    else if (strcmp(topic, "/drone/current_position") == 0) {
+        get_coords_from_parameters(&polar, &cart);
+        float values[3] = {cart.x, cart.y, cart.z};
+        osc_send_floats(topic, "fff", values);
+    }
+    else if (strcmp(topic, "/drone/battery_status") == 0) {
+        Parameters_t params = {0};
+        get_parameters(&params);
+        float values[1] = {params.batteryP};
+        osc_send_floats(topic, "f", values);
+    }
+    else if (strcmp(topic, "/drone/land") == 0) {
+        GoToPosition_t land_now ={0.0f, 0.0f, -1.0f}; // Control will land if z is <= 0
+        set_goto_position(&land_now);
     }
     return true;
 }
 
-static void receiver(void *parameter){
+static void receiver(void *parameter)
+{
     (void)parameter;
 
-    while(1){
-        esp_osc_receive(&client, osc_callback);
+    for (;;) {
+        bool ok = esp_osc_receive(&client, osc_callback);
+
+        if (!ok) {
+            ESP_LOGW(TAG, "receiver: OSC send failed.");
+            vTaskDelay(pdMS_TO_TICKS(1));
+        }
     }
 }
+

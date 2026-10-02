@@ -7,11 +7,13 @@
 #include "esp_transport.h"
 #include "com.h"
 #include "aideck_global_queues.h"
+#include "aideck_osc.h"
 
 typedef enum {
-    CPX_IF_INIT = 0,
     CPX_IF_GOTO_FIXED_COORDINATES = 1,
     CPX_IF_NEW_PARAMETERS = 2,
+    CPX_IF_GOTO_ACK = 3,
+    CPX_IF_CONSTANTS = 4
 } CPXInternalFunction_t;
 
 // Function prototypes
@@ -36,6 +38,7 @@ static void aideck_receive_cpx_task(void *pvParameters) {
     while (1) {
         com_receive_aideck_app_blocking(&rxp);
         CPXInternalFunction_t intFunction = (CPXInternalFunction_t)rxp.data[0];
+        float target_position[3] = {0};
         switch (intFunction) {
             case CPX_IF_NEW_PARAMETERS:
                 write_parameters_to_queue(
@@ -43,6 +46,14 @@ static void aideck_receive_cpx_task(void *pvParameters) {
                     read_uin8_array_to_float(rxp.data, 1+4),
                     read_uin8_array_to_float(rxp.data, 1+8),
                     read_uin8_array_to_float(rxp.data, 1+12));
+                break;
+            case CPX_IF_GOTO_ACK:
+                    target_position[0] = read_uin8_array_to_float(rxp.data, 1);
+                    target_position[1] = read_uin8_array_to_float(rxp.data, 1+4);
+                    target_position[2] = read_uin8_array_to_float(rxp.data, 1+8);
+                osc_send_target(target_position);
+                break;
+            case CPX_IF_CONSTANTS:
                 break;
             default:
                 break;

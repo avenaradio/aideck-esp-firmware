@@ -48,9 +48,9 @@ Drone coords
 #define Y_OFFSET 0.0f
 #define Z_OFFSET 1.7f
 // ADM-OSC orientation, x=1 is equivalent to X_WIDTH in m
-float x_width = 2.0f;
-float y_width = 2.0f;
-float z_width = Z_OFFSET;
+float x_width = 1.7f;
+float y_width = 1.7f;
+float z_width = 1.7f;
 
 AdmPolar_t adm_polar = {0};
 AdmCartesian_t adm_cartesian = {0};
@@ -60,6 +60,7 @@ BaseType_t adm_polar_to_cartesian(AdmPolar_t *polar, AdmCartesian_t *cart);
 BaseType_t adm_cartesian_to_polar(AdmCartesian_t *cart, AdmPolar_t *polar);
 BaseType_t get_coords_from_parameters(AdmPolar_t *polar, AdmCartesian_t *cart);
 BaseType_t add_goto_to_queue(AdmCartesian_t *cart);
+static float clamp_float(float value, float min, float max);
 
 // -------------------------------- ADM-OSC processing ----------------------------------------- //
 void azim(float azimuth) {
@@ -240,9 +241,9 @@ BaseType_t add_goto_to_queue(AdmCartesian_t *cart){
     if (cart == NULL) {return pdFALSE;}
     GoToPosition_t new_position = {0};
     // Denormalize
-    float x = cart->x * x_width;
-    float y = cart->y * y_width;
-    float z = cart->z * z_width;
+    float x = clamp_float(cart->x, -1.0f, 1.0f) * x_width;
+    float y = clamp_float(cart->y, -1.0f, 1.0f) * y_width;
+    float z = clamp_float(cart->z, -1.0f, 1.0f) * z_width;
     //ESP_LOGI(TAG, "set_goto_from_cartesian() denormalized: x=%f y=%f z=%f", x, y, z);
     new_position.x = x + X_OFFSET;
     new_position.y = y + Y_OFFSET;
@@ -250,4 +251,13 @@ BaseType_t add_goto_to_queue(AdmCartesian_t *cart){
     //ESP_LOGI(TAG, "set_goto_from_cartesian() minus offset: x=%f y=%f z=%f", new_position.x, new_position.y, new_position.z);
     BaseType_t result = set_goto_position(&new_position);
     return result;
+}
+
+/*
+ * Clamp a value to the given range.
+ */
+static float clamp_float(float value, float min, float max){
+    if (value < min) return min;
+    if (value > max) return max;
+    return value;
 }
