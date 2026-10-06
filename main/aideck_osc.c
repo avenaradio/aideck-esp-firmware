@@ -17,10 +17,10 @@
 
 #define OSC_IN_PORT 9001
 #define OSC_OUT_PORT 9001
-#define OSC_OUT_ADDRESS "255.255.255.255" // 192.168.178.255 // 255.255.255.255
+#define OSC_OUT_ADDRESS "192.168.178.255" // 192.168.178.255 // 255.255.255.255
 #define OSC_BUFFER_SIZE 1024
 
-#define TAG "osc"
+#define TAG "AIDECK_OSC"
 
 static esp_osc_client_t client;
 static esp_osc_target_t target;
@@ -34,16 +34,8 @@ void osc_init(void){
     esp_osc_init(&client, OSC_BUFFER_SIZE, OSC_IN_PORT);
     // xTaskCreatePinnedToCore(sender, "sender", 4096, NULL, 10, NULL, 1);
     xTaskCreatePinnedToCore(receiver, "receiver", 4096, NULL, 10, NULL, 1);
+    esp_osc_send(&client, &target, "/drone/osc_init done", "");
 }
-
-// static void sender(void *parameter){
-//     (void)parameter;
-//     for (;;) {
-//         vTaskDelay(pdMS_TO_TICKS(1000));
-
-//         esp_osc_send(&client, &target, "test", "ihfdsb", 42, (int64_t)84, 3.14f, 6.28, "foo", 3, "bar");
-//     }
-// }
 
 //TODO use esp_osc_send_v instead?
 void osc_send_floats(const char *topic, const char *format, float *values){
@@ -77,7 +69,8 @@ bool osc_send_target(float values[]){
 }
 
 static bool osc_callback(const char *topic, const char *format, esp_osc_value_t *values){
-    // ESP_LOGI(TAG, "got message: %s (%s)", topic, format);
+    ESP_LOGI(TAG, "Got message: %s (%s)", topic, format);
+    // ESP_LOGI(TAG, "Constants are: x_max: %.3f %.3f, y_max: %.3f %.3f", global_constants.x_max_positive, global_constants.x_max_negative, global_constants.y_max_positive, global_constants.y_max_negative);
     AdmPolar_t polar = {0};
     AdmCartesian_t cart = {0};
 
