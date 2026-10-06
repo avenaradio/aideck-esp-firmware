@@ -65,22 +65,25 @@ int cpx_and_uart_vprintf(const char * fmt, va_list ap) {
     return len;
 }
 
-// void wifi_monitor_task(void *arg){
-//     while (1) {
-//         EventBits_t event_bits = xEventGroupWaitBits(
-//             s_wifi_event_group,
-//             WIFI_CONNECTED_BIT | WIFI_SOCKET_DISCONNECTED,
-//             pdFALSE,        // Do not clear the bit after receiving it
-//             pdFALSE,       // Wait for any bit
-//             portMAX_DELAY
-//         );
-//         if (event_bits & WIFI_SOCKET_DISCONNECTED) {
-//             ESP_LOGI("SYS", "WIFI disconnected, trying to reconnect...");
-//             wifi_init();
-//         }
-//         vTaskDelay(2000);
-//     }
-// }
+int osc_vprintf(const char *fmt, va_list ap){
+    va_list ap_copy;
+    va_copy(ap_copy, ap);
+    int len = vprintf(fmt, ap);
+    if (len < 0) {
+        va_end(ap_copy);
+        return len;
+    }
+    char data[LOG_MESSAGE_SIZE];
+    int required = vsnprintf(data, sizeof(data), fmt, ap_copy);
+    va_end(ap_copy);
+    if (required >= 0) {
+        if (required >= sizeof(data)) {
+            data[sizeof(data) - 1] = '\0';
+        }
+        set_log(&data);
+    }
+    return len;
+}
 
 
 #define DEBUG_TXD_PIN (GPIO_NUM_0) // Nina 27 /SYSBOOT) => 0
@@ -150,6 +153,7 @@ void app_main(void)
     global_parameters_init();
     aideck_cpx_init();
     osc_init();
+    esp_log_set_vprintf(osc_vprintf);
 
     while(1) {
         vTaskDelay(2000);
