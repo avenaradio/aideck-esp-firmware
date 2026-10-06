@@ -12,7 +12,7 @@ Constants_t global_constants = {0};
 void global_parameters_init(void){
     parameters_queue = xQueueCreate(1, sizeof(Parameters_t));
     goto_fix_position_queue = xQueueCreate(100, sizeof(GoToPosition_t));
-    log_queue = xQueueCreate(50, sizeof(log_message_t)); // 100 was too big, killed everything
+    log_queue = xQueueCreate(20, sizeof(log_message_t)); // 100 was way too big, killed everything. 
 }
 
 BaseType_t set_parameters(const Parameters_t *parameters){
