@@ -65,10 +65,12 @@ int cpx_and_uart_vprintf(const char * fmt, va_list ap) {
     return len;
 }
 
-int osc_vprintf(const char *fmt, va_list ap){
+// Sending print to both lead to osc message loss
+int osc_and_cpx_vprintf(const char *fmt, va_list ap){
     va_list ap_copy;
     va_copy(ap_copy, ap);
     int len = vprintf(fmt, ap);
+    // cpxInitRoute(CPX_T_ESP32, CPX_T_STM32, CPX_F_CONSOLE, &txp.route);
     if (len < 0) {
         va_end(ap_copy);
         return len;
@@ -80,6 +82,8 @@ int osc_vprintf(const char *fmt, va_list ap){
         if (required >= sizeof(data)) {
             data[sizeof(data) - 1] = '\0';
         }
+        // txp.dataLength = strlen(data) +1;
+        // memcpy(txp.data, data, txp.dataLength);
         set_log(&data);
     }
     return len;
@@ -153,7 +157,7 @@ void app_main(void)
     global_parameters_init();
     aideck_cpx_init();
     osc_init();
-    esp_log_set_vprintf(osc_vprintf);
+    esp_log_set_vprintf(osc_and_cpx_vprintf);
 
     while(1) {
         vTaskDelay(2000);

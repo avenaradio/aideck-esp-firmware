@@ -5,9 +5,9 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "esp_log.h"
 #include "esp_osc.h"
 #include "freertos/FreeRTOS.h"
+#include "esp_log.h"
 #include "freertos/task.h"
 #include "aideck_offset_math.h"
 
@@ -27,6 +27,7 @@ static esp_osc_target_t target;
 
 int log_enabled = 1;
 
+void osc_send_floats(const char *topic, const char *format, float *values);
 static bool osc_callback(const char *topic, const char *format, esp_osc_value_t *values);
 static void receiver(void *parameter);
 static void log_sender(void *parameter);
@@ -58,7 +59,7 @@ void osc_send_floats(const char *topic, const char *format, float *values){
             ok = esp_osc_send(&client, &target, topic, format, values[0], values[1], values[2]);
             break;
         default:
-            ok = false;
+            ok = esp_osc_send(&client, &target, topic, format);
             break;
     }
     if (!ok) {
@@ -130,7 +131,8 @@ static bool osc_callback(const char *topic, const char *format, esp_osc_value_t 
     //         break;
     //     }
     // }
-    esp_osc_send(&client, &target, "/drone/osc_received" , "s", topic);
+    
+    //esp_osc_send(&client, &target, "/drone/osc_received" , "s", topic);
 
     if (strcmp(topic, "/adm/obj/16/azim") == 0) {
         if (strcmp(format, "f") == 0) {
@@ -245,6 +247,27 @@ static bool osc_callback(const char *topic, const char *format, esp_osc_value_t 
     else if (strcmp(topic, "/drone/land") == 0) {
         GoToPosition_t land_now ={0.0f, 0.0f, -1.0f}; // Control will land if z is <= 0
         set_goto_position(&land_now);
+    }
+    else if (strcmp(topic, "/drone/current_parameters") == 0) {
+        Parameters_t params = {0};
+        get_parameters(&params);
+        ESP_LOGI(TAG, "Current Parameters: x:%.3f, y: %.3f, z: %.3f, battery: %.0f", params.x, params.y, params.z, params.batteryP);
+    }
+    else if (strcmp(topic, "/drone/global_constants") == 0) {
+        ESP_LOGI(TAG, "Global_consts: x:%.1f %.1f, y: %.1f %.2f, z: %.1f %.1f",
+                        global_constants.x_max_positive,
+                        global_constants.x_max_negative,
+                        global_constants.y_max_positive,
+                        global_constants.y_max_negative,
+                        global_constants.z_max_positive,
+                        global_constants.z_max_negative
+                    );
+    }
+    else if (strcmp(topic, "/drone/log") == 0) {
+        ESP_LOGI(TAG, "050 xxxxxxxxxxxxxxxxxxxxxxxx");
+        if (log_enabled) log_enabled = 0;
+        else log_enabled = 1;
+        
     }
     return true;
 }
