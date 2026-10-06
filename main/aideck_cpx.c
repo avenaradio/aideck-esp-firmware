@@ -19,6 +19,8 @@ typedef enum {
     CPX_IF_CONSTANTS = 4
 } CPXInternalFunction_t;
 
+bool constants_received_ok = false;
+
 // Function prototypes
 static void aideck_receive_cpx_task(void *pvParameters);
 void write_parameters_to_queue(float x, float y, float z, float batteryP);
@@ -34,7 +36,7 @@ void aideck_cpx_init() {
     xTaskCreate(aideck_receive_cpx_task, "AiDeck Receive CPX Task", 5000, NULL, 1, NULL);
     xTaskCreate(aideck_send_cpx_task, "AiDeck Send CPX Task", 5000, NULL, 1, NULL);
 
-    ESP_LOGI(TAG, "Initialized");
+    ESP_LOGI(TAG, "aideck_cpx_init done");
 }
 
 //------------------------------------- RECEIVE ----------------------------------------------------//
@@ -58,23 +60,26 @@ static void aideck_receive_cpx_task(void *pvParameters) {
                 osc_send_target(target_position);
                 break;
             case CPX_IF_CONSTANTS: {
-                Constants_t received_constants = {
-                    .x_max_positive = read_uin8_array_to_float(rxp.data,1),
-                    .x_max_negative = read_uin8_array_to_float(rxp.data,4+1),
-                    .y_max_positive = read_uin8_array_to_float(rxp.data,8+1),
-                    .y_max_negative = read_uin8_array_to_float(rxp.data,12+1),
-                    .z_max_positive = read_uin8_array_to_float(rxp.data,16+1),
-                    .z_max_negative = read_uin8_array_to_float(rxp.data,20+1)
-                };
-                ESP_LOGI(TAG, "Received global_constants: x=%f, -x=%f, y=%f, -y=%f, z=%f, -z=%f",
-                    received_constants.x_max_positive,
-                    received_constants.x_max_negative,
-                    received_constants.y_max_positive,
-                    received_constants.y_max_negative,
-                    received_constants.z_max_positive,
-                    received_constants.z_max_negative
-                );
-                global_constants = received_constants;
+                if (!constants_received_ok){
+                    Constants_t received_constants = {
+                        .x_max_positive = read_uin8_array_to_float(rxp.data,1),
+                        .x_max_negative = read_uin8_array_to_float(rxp.data,4+1),
+                        .y_max_positive = read_uin8_array_to_float(rxp.data,8+1),
+                        .y_max_negative = read_uin8_array_to_float(rxp.data,12+1),
+                        .z_max_positive = read_uin8_array_to_float(rxp.data,16+1),
+                        .z_max_negative = read_uin8_array_to_float(rxp.data,20+1)
+                    };
+                    ESP_LOGI(TAG, "Got global_consts: x:%.2f %.2f, y: %.2f %.2f, z: %.2f %.2f",
+                        received_constants.x_max_positive,
+                        received_constants.x_max_negative,
+                        received_constants.y_max_positive,
+                        received_constants.y_max_negative,
+                        received_constants.z_max_positive,
+                        received_constants.z_max_negative
+                    );
+                    global_constants = received_constants;
+                    constants_received_ok = true;
+                }
                 send_init_done();
                 break;
             }
