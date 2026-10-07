@@ -132,7 +132,7 @@ static bool osc_callback(const char *topic, const char *format, esp_osc_value_t 
     //     }
     // }
     
-    //esp_osc_send(&client, &target, "/drone/osc_received" , "s", topic);
+    esp_osc_send(&client, &target, "/drone/osc_received" , "s", topic);
 
     if (strcmp(topic, "/adm/obj/16/azim") == 0) {
         if (strcmp(format, "f") == 0) {

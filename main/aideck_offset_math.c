@@ -267,12 +267,12 @@ BaseType_t add_goto_to_queue(AdmCartesian_t *cart){
         if (cart->y < 0.0f){
             y = clamp_float(cart->y, -1.0f, 1.0f) * global_constants.y_max_negative;
         } else {
-            x = clamp_float(cart->x, -1.0f, 1.0f) * global_constants.x_max_positive;
+             y = clamp_float(cart->y, -1.0f, 1.0f) * global_constants.y_max_positive;
         }
         if (cart->z < 0.0f){
             z = clamp_float(cart->z, -1.0f, 1.0f) * global_constants.z_max_negative;
         } else {
-            x = clamp_float(cart->x, -1.0f, 1.0f) * global_constants.x_max_positive;
+            z = clamp_float(cart->z, -1.0f, 1.0f) * global_constants.z_max_positive;
         }
     }
     
