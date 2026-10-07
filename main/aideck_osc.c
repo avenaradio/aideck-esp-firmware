@@ -17,7 +17,7 @@
 
 #define OSC_IN_PORT 9001
 #define OSC_OUT_PORT 9001
-#define OSC_OUT_ADDRESS "192.168.178.255" // 192.168.178.255 // 255.255.255.255
+#define OSC_OUT_ADDRESS "192.168.1.255" // 192.168.178.255 // 255.255.255.255
 #define OSC_BUFFER_SIZE 1024
 
 #define TAG "AIDECK_OSC"
@@ -30,12 +30,12 @@ int log_enabled = 1;
 void osc_send_floats(const char *topic, const char *format, float *values);
 static bool osc_callback(const char *topic, const char *format, esp_osc_value_t *values);
 static void receiver(void *parameter);
-static void log_sender(void *parameter);
+// static void log_sender(void *parameter);
 
 void osc_init(void){
     target = esp_osc_target(OSC_OUT_ADDRESS, OSC_OUT_PORT);
     esp_osc_init(&client, OSC_BUFFER_SIZE, OSC_IN_PORT);
-    xTaskCreate(log_sender, "log_sender", 2048, NULL, 5, NULL);
+    // xTaskCreate(log_sender, "log_sender", 2048, NULL, 5, NULL);
     xTaskCreatePinnedToCore(receiver, "receiver", 4096, NULL, 10, NULL, 1);
     esp_osc_send(&client, &target, "/drone/osc_init done", "");
 }
@@ -71,29 +71,29 @@ bool osc_send_target(float values[]){
     return esp_osc_send(&client, &target, "/drone/target_position", "fff", values[0], values[1], values[2]);
 }
 
-static void log_sender(void *parameter){
-    log_message_t message;
-    while (1) {
-        if (!log_enabled) {
-            vTaskDelay(pdMS_TO_TICKS(100));
-            continue;
-        }
-        if (get_log(&message) != pdTRUE) {
-            continue;
-        }
-        size_t len = strlen(message);
-        if (len > 0 && message[len - 1] == '\n') {
-            message[--len] = '\0';
-            // Also remove '\r' if the input uses CRLF: "\r\n"
-            if (len > 0 && message[len - 1] == '\r') {
-                message[--len] = '\0';
-            }
-        }
-        if (len > 0) {
-            esp_osc_send(&client, &target, "/drone/log", "s", message);
-        }
-    }
-}
+// static void log_sender(void *parameter){
+//     log_message_t message;
+//     while (1) {
+//         if (!log_enabled) {
+//             vTaskDelay(pdMS_TO_TICKS(100));
+//             continue;
+//         }
+//         if (get_log(&message) != pdTRUE) {
+//             continue;
+//         }
+//         size_t len = strlen(message);
+//         if (len > 0 && message[len - 1] == '\n') {
+//             message[--len] = '\0';
+//             // Also remove '\r' if the input uses CRLF: "\r\n"
+//             if (len > 0 && message[len - 1] == '\r') {
+//                 message[--len] = '\0';
+//             }
+//         }
+//         if (len > 0) {
+//             esp_osc_send(&client, &target, "/drone/log", "s", message);
+//         }
+//     }
+// }
 
 static bool osc_callback(const char *topic, const char *format, esp_osc_value_t *values){
     ESP_LOGI(TAG, "Got message: %s (%s)", topic, format);

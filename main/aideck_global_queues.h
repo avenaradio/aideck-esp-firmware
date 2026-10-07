@@ -4,8 +4,8 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 
-#define LOG_MESSAGE_SIZE 256
-typedef char log_message_t[LOG_MESSAGE_SIZE];
+// #define LOG_MESSAGE_SIZE 256
+// typedef char log_message_t[LOG_MESSAGE_SIZE];
 
 typedef struct{
     float x;
@@ -34,8 +34,8 @@ typedef struct{
 } Constants_t;
 extern Constants_t global_constants;
 
-BaseType_t set_log(const log_message_t *log_message);
-BaseType_t get_log(log_message_t *log_message);
+// BaseType_t set_log(const log_message_t *log_message);
+// BaseType_t get_log(log_message_t *log_message);
 
 void global_parameters_init(void);
 
