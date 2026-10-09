@@ -216,7 +216,7 @@ BaseType_t adm_polar_to_cartesian(AdmPolar_t *polar, AdmCartesian_t *cart){
     return pdTRUE;
 }
 
-
+ 
 /*
  * Reads drone coords from parameters and calculates adm coords in cartesian and polar
  */
