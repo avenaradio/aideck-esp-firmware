@@ -17,7 +17,7 @@
 
 #define OSC_IN_PORT 9001
 #define OSC_OUT_PORT 9001
-#define OSC_OUT_ADDRESS "192.168.1.255" // 192.168.178.255 // 255.255.255.255
+#define OSC_OUT_ADDRESS "192.168.178.255" // 192.168.178.255 // 255.255.255.255
 #define OSC_BUFFER_SIZE 1024
 
 #define TAG "AIDECK_OSC"
@@ -29,15 +29,15 @@ int log_enabled = 1;
 
 void osc_send_floats(const char *topic, const char *format, float *values);
 static bool osc_callback(const char *topic, const char *format, esp_osc_value_t *values);
-static void receiver(void *parameter);
+static void read_receive_queue_task(void *parameter);
 // static void log_sender(void *parameter);
 
 void osc_init(void){
     target = esp_osc_target(OSC_OUT_ADDRESS, OSC_OUT_PORT);
     esp_osc_init(&client, OSC_BUFFER_SIZE, OSC_IN_PORT);
     // xTaskCreate(log_sender, "log_sender", 2048, NULL, 5, NULL);
-    xTaskCreatePinnedToCore(receiver, "receiver", 4096, NULL, 10, NULL, 1);
-    esp_osc_send(&client, &target, "/drone/osc_init done", "");
+    xTaskCreatePinnedToCore(read_receive_queue_task, "receiver", 4096, NULL, 10, NULL, 1);
+    esp_osc_send(&client, &target, "/drone/output/ready-to-fly", "");
 }
 
 //TODO use esp_osc_send_v instead?
@@ -68,32 +68,8 @@ void osc_send_floats(const char *topic, const char *format, float *values){
 }
 
 bool osc_send_target(float values[]){
-    return esp_osc_send(&client, &target, "/drone/target_position", "fff", values[0], values[1], values[2]);
+    return esp_osc_send(&client, &target, "/drone/output/internal-target-pos-in-m", "fff", values[0], values[1], values[2]);
 }
-
-// static void log_sender(void *parameter){
-//     log_message_t message;
-//     while (1) {
-//         if (!log_enabled) {
-//             vTaskDelay(pdMS_TO_TICKS(100));
-//             continue;
-//         }
-//         if (get_log(&message) != pdTRUE) {
-//             continue;
-//         }
-//         size_t len = strlen(message);
-//         if (len > 0 && message[len - 1] == '\n') {
-//             message[--len] = '\0';
-//             // Also remove '\r' if the input uses CRLF: "\r\n"
-//             if (len > 0 && message[len - 1] == '\r') {
-//                 message[--len] = '\0';
-//             }
-//         }
-//         if (len > 0) {
-//             esp_osc_send(&client, &target, "/drone/log", "s", message);
-//         }
-//     }
-// }
 
 static bool osc_callback(const char *topic, const char *format, esp_osc_value_t *values){
     ESP_LOGI(TAG, "Got message: %s (%s)", topic, format);
@@ -132,7 +108,7 @@ static bool osc_callback(const char *topic, const char *format, esp_osc_value_t 
     //     }
     // }
     
-    esp_osc_send(&client, &target, "/drone/osc_received" , "s", topic);
+    esp_osc_send(&client, &target, "/drone/output/osc_received" , "s", topic);
 
     if (strcmp(topic, "/adm/obj/16/azim") == 0) {
         if (strcmp(format, "f") == 0) {
@@ -233,46 +209,26 @@ static bool osc_callback(const char *topic, const char *format, esp_osc_value_t 
         }
     }
     // DRONE SPECIFIC OSC
-    else if (strcmp(topic, "/drone/current_position") == 0) {
+    else if (strcmp(topic, "/drone/control/current-position") == 0) {
         get_coords_from_parameters(&polar, &cart);
         float values[3] = {cart.x, cart.y, cart.z};
         osc_send_floats(topic, "fff", values);
     }
-    else if (strcmp(topic, "/drone/battery_status") == 0) {
+    else if (strcmp(topic, "/drone/control/battery-status") == 0) {
         Parameters_t params = {0};
         get_parameters(&params);
         float values[1] = {params.batteryP};
         osc_send_floats(topic, "f", values);
+        ESP_LOGI(TAG, "Current params: xyz: %.2f %.2f %.2f, battery: %.2f", params.x, params.y, params.y, params.batteryP);
     }
-    else if (strcmp(topic, "/drone/land") == 0) {
+    else if (strcmp(topic, "/drone/control/land") == 0) {
         GoToPosition_t land_now ={0.0f, 0.0f, -1.0f}; // Control will land if z is <= 0
         set_goto_position(&land_now);
-    }
-    else if (strcmp(topic, "/drone/current_parameters") == 0) {
-        Parameters_t params = {0};
-        get_parameters(&params);
-        ESP_LOGI(TAG, "Current Parameters: x:%.3f, y: %.3f, z: %.3f, battery: %.0f", params.x, params.y, params.z, params.batteryP);
-    }
-    else if (strcmp(topic, "/drone/global_constants") == 0) {
-        ESP_LOGI(TAG, "Global_consts: x:%.1f %.1f, y: %.1f %.2f, z: %.1f %.1f",
-                        global_constants.x_max_positive,
-                        global_constants.x_max_negative,
-                        global_constants.y_max_positive,
-                        global_constants.y_max_negative,
-                        global_constants.z_max_positive,
-                        global_constants.z_max_negative
-                    );
-    }
-    else if (strcmp(topic, "/drone/log") == 0) {
-        ESP_LOGI(TAG, "050 xxxxxxxxxxxxxxxxxxxxxxxx");
-        if (log_enabled) log_enabled = 0;
-        else log_enabled = 1;
-        
     }
     return true;
 }
 
-static void receiver(void *parameter)
+static void read_receive_queue_task(void *parameter)
 {
     (void)parameter;
 

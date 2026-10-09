@@ -38,6 +38,7 @@ Drone coords
 #include "esp_log.h"
 #include "freertos/projdefs.h"
 #include "aideck_offset_math.h"
+#include "aideck_osc.h"
 #define TAG "OFFSET_MATH"
 
 #define ADM_DEG_TO_RAD (M_PI / 180.0)
@@ -231,9 +232,27 @@ BaseType_t get_coords_from_parameters(AdmPolar_t *polar, AdmCartesian_t *cart){
     float y = parameters.y - Y_OFFSET;
     float z = parameters.z - Z_OFFSET;
     // Normalize
-    cart->x = x / custom_dmax;
-    cart->y = y / custom_dmax;
-    cart->z = z / custom_dmax;
+    if (custom_dmax > 0.0f) {
+        cart->x = x / custom_dmax;
+        cart->y = y / custom_dmax;
+        cart->z = z / custom_dmax;
+    } else {
+        if (x < 0.0f) {
+            cart->x = x / global_constants.x_max_negative;
+        } else {
+            cart->x = x / global_constants.x_max_positive;
+        }
+        if (y < 0.0f) {
+            cart->y = y / global_constants.y_max_negative;
+        } else {
+            cart->y = y / global_constants.y_max_positive;
+        }
+        if (z < 0.0f) {
+            cart->z = z / global_constants.z_max_negative;
+        } else {
+            cart->z = z / global_constants.z_max_positive;
+        }
+    }
 
     // Also get the polar coords
     if (adm_cartesian_to_polar(cart, polar) == pdTRUE){
@@ -281,6 +300,8 @@ BaseType_t add_goto_to_queue(AdmCartesian_t *cart){
     new_position.y = y + Y_OFFSET;
     new_position.z = z + Z_OFFSET;
     //ESP_LOGI(TAG, "set_goto_from_cartesian() minus offset: x=%f y=%f z=%f", new_position.x, new_position.y, new_position.z);
+    float adm_target_pos[3] = {adm_cartesian.x, adm_cartesian.y, adm_cartesian.z};
+    osc_send_floats("/drone/output/target-position", "fff", adm_target_pos);
     BaseType_t result = set_goto_position(&new_position);
     return result;
 }
