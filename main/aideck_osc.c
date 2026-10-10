@@ -71,6 +71,10 @@ bool osc_send_target(float values[]){
     return esp_osc_send(&client, &target, "/drone/output/internal-target-pos-in-m", "fff", values[0], values[1], values[2]);
 }
 
+bool osc_send_empty_battery_landing(void){
+    return esp_osc_send(&client, &target, "/drone/output/empty-battery-landing", "");
+}
+
 static bool osc_callback(const char *topic, const char *format, esp_osc_value_t *values){
     ESP_LOGI(TAG, "Got message: %s (%s)", topic, format);
     // ESP_LOGI(TAG, "Constants are: x_max: %.3f %.3f, y_max: %.3f %.3f", global_constants.x_max_positive, global_constants.x_max_negative, global_constants.y_max_positive, global_constants.y_max_negative);
