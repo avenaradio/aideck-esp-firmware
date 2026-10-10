@@ -38,13 +38,10 @@
 #include "esp_log.h"
 #include "nvs_flash.h"
 #include "driver/gpio.h"
-#include "lwip/err.h"
-#include "lwip/sys.h"
-#include "lwip/sockets.h"
-#include <lwip/netdb.h>
 #include "esp_netif.h"
 
 #include "com.h"
+
 #define BLINK_GPIO 4
 
 static esp_routable_packet_t rxp;
@@ -58,8 +55,8 @@ static char key[MAX_SSID_SIZE];
 
 const int WIFI_CONNECTED_BIT = BIT0;
 const int WIFI_SOCKET_DISCONNECTED = BIT1;
-static const int WIFI_PACKET_WAIT_SEND = BIT2;
-static const int WIFI_PACKET_SENDING = BIT3;
+// static const int WIFI_PACKET_WAIT_SEND = BIT2;
+// static const int WIFI_PACKET_SENDING = BIT3;
 EventGroupHandle_t s_wifi_event_group = NULL;
 
 static const int START_UP_MAIN_TASK = BIT0;
@@ -68,8 +65,6 @@ static const int START_UP_TX_TASK = BIT2;
 static const int START_UP_CTRL_TASK = BIT3;
 static EventGroupHandle_t startUpEventGroup;
 
-
-#define NO_CONNECTION -1
 #define WIFI_HOST_QUEUE_LENGTH (2)
 
 static xQueueHandle wifiRxQueue;
@@ -77,11 +72,6 @@ static xQueueHandle wifiTxQueue;
 
 /* Log printout tag */
 static const char *TAG = "WIFI";
-
-/* Socket for receiving WiFi connections */
-static int serverSock = -1;
-/* Accepted WiFi connection */
-static int clientConnection = NO_CONNECTION;
 
 enum {
   WIFI_CTRL_SET_SSID                = 0x10,
@@ -101,27 +91,31 @@ static void event_handler(void* handlerArg, esp_event_base_t eventBase, int32_t 
       case WIFI_EVENT_STA_START:
         ESP_ERROR_CHECK(esp_wifi_connect());
         break;
+
       case WIFI_EVENT_STA_DISCONNECTED:
         ESP_ERROR_CHECK(esp_wifi_connect());
         xEventGroupClearBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
-        ESP_LOGI(TAG,"Disconnected from access point");
+        ESP_LOGI(TAG, "Disconnected from access point");
         break;
+
       case WIFI_EVENT_AP_STACONNECTED:
         {
           wifi_event_ap_staconnected_t* event = (wifi_event_ap_staconnected_t*)eventData;
-          ESP_LOGI(TAG, "station:"MACSTR" join, AID=%d",
-                    MAC2STR(event->mac),
-                    event->aid);
+          ESP_LOGI(TAG, "station:" MACSTR " join, AID=%d",
+                   MAC2STR(event->mac),
+                   event->aid);
         }
         break;
+
       case WIFI_EVENT_AP_STADISCONNECTED:
         {
           wifi_event_ap_stadisconnected_t* event = (wifi_event_ap_stadisconnected_t*)eventData;
-          ESP_LOGI(TAG, "station:"MACSTR"leave, AID=%d",
-                    MAC2STR(event->mac),
-                    event->aid);
+          ESP_LOGI(TAG, "station:" MACSTR "leave, AID=%d",
+                   MAC2STR(event->mac),
+                   event->aid);
         }
         break;
+
       default:
         // Fall through
         break;
@@ -138,12 +132,12 @@ static void event_handler(void* handlerArg, esp_event_base_t eventBase, int32_t 
           wifi_ap_record_t ap_info;
           ESP_ERROR_CHECK(esp_wifi_sta_get_ap_info(&ap_info));
           ESP_LOGD(TAG, "BSAP MAC is %x:%x:%x:%x:%x:%x",
-              ap_info.bssid[0], ap_info.bssid[1], ap_info.bssid[2],
-              ap_info.bssid[3], ap_info.bssid[4], ap_info.bssid[5]);
+                   ap_info.bssid[0], ap_info.bssid[1], ap_info.bssid[2],
+                   ap_info.bssid[3], ap_info.bssid[4], ap_info.bssid[5]);
           ESP_LOGI(TAG, "country: %s", ap_info.country.cc);
           ESP_LOGI(TAG, "rssi: %d", ap_info.rssi);
           ESP_LOGI(TAG, "11b: %d, 11g: %d, 11n: %d, lr: %d",
-            ap_info.phy_11b, ap_info.phy_11g, ap_info.phy_11n, ap_info.phy_lr);
+                   ap_info.phy_11b, ap_info.phy_11g, ap_info.phy_11n, ap_info.phy_lr);
 
           cpxInitRoute(CPX_T_ESP32, CPX_T_GAP8, CPX_F_WIFI_CTRL, &txp.route);
           txp.data[0] = WIFI_CTRL_STATUS_WIFI_CONNECTED;
@@ -159,6 +153,7 @@ static void event_handler(void* handlerArg, esp_event_base_t eventBase, int32_t 
           xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
         }
         break;
+
       default:
         // Fall through
         break;
@@ -173,9 +168,9 @@ static void wifi_init_softap(const char *ssid, const char* key)
   assert(ap_netif);
 
   // Set the DHCP hostname
-    ESP_ERROR_CHECK(
-        esp_netif_set_hostname(ap_netif, "crazyflie_esp")
-    );
+  ESP_ERROR_CHECK(
+      esp_netif_set_hostname(ap_netif, "crazyflie_esp")
+  );
 
   wifi_config_t wifi_config = {
       .ap = {
@@ -183,7 +178,9 @@ static void wifi_init_softap(const char *ssid, const char* key)
           .max_connection = 1,
           .authmode = WIFI_AUTH_OPEN},
   };
+
   strncpy((char *)wifi_config.ap.ssid, ssid, strlen(ssid));
+
   if (strlen(key) > 0) {
     strncpy((char *)wifi_config.ap.password, key, strlen(key));
     wifi_config.ap.authmode = WIFI_AUTH_WPA_WPA2_PSK;
@@ -197,7 +194,7 @@ static void wifi_init_softap(const char *ssid, const char* key)
   ESP_LOGI(TAG, "wifi_init_softap finished");
 }
 
-static void wifi_init_sta(const char * ssid, const char * key)
+static void wifi_init_sta(const char *ssid, const char *key)
 {
   esp_netif_t* sta_netif = esp_netif_create_default_wifi_sta();
   assert(sta_netif);
@@ -209,17 +206,18 @@ static void wifi_init_sta(const char * ssid, const char * key)
   strncpy((char *)wifi_config.sta.password, key, strlen(key));
   ESP_LOGD(TAG, "KEY is %u chars", strlen(key));
 
-  ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA) );
+  ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
   ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
-  ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config) );
-  ESP_ERROR_CHECK(esp_wifi_start() );
+  ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
+  ESP_ERROR_CHECK(esp_wifi_start());
 
   ESP_LOGI(TAG, "wifi_init_sta finished.");
-
 }
 
-static void wifi_ctrl(void* _param) {
+static void wifi_ctrl(void* _param)
+{
   xEventGroupSetBits(startUpEventGroup, START_UP_CTRL_TASK);
+
   while (1) {
     com_receive_wifi_ctrl_blocking(&rxp);
 
@@ -227,17 +225,19 @@ static void wifi_ctrl(void* _param) {
       case WIFI_CTRL_SET_SSID:
         ESP_LOGD("WIFI", "Should set SSID");
         memcpy(ssid, &rxp.data[1], rxp.dataLength - 1);
-        ssid[rxp.dataLength - 1 + 1] = 0;
+        ssid[rxp.dataLength] = 0;
         ESP_LOGD(TAG, "SSID: %s", ssid);
         // Save to NVS?
         break;
+
       case WIFI_CTRL_SET_KEY:
         ESP_LOGD("WIFI", "Should set password");
         memcpy(key, &rxp.data[1], rxp.dataLength - 1);
-        key[rxp.dataLength - 1 + 1] = 0;
+        key[rxp.dataLength] = 0;
         ESP_LOGD(TAG, "KEY: %s", key);
         // Save to NVS?
         break;
+
       case WIFI_CTRL_WIFI_CONNECT:
         ESP_LOGD("WIFI", "Should connect");
 
@@ -260,153 +260,24 @@ static void wifi_ctrl(void* _param) {
   }
 }
 
-static void close_client_socket()
+/*
+ * TCP socket transport removed.
+ * These functions are retained to minimize changes to callers.
+ */
+
+void wifi_send_packet(const char *buffer, size_t size)
 {
-    close(clientConnection);
-    clientConnection = NO_CONNECTION;
-    xEventGroupSetBits(s_wifi_event_group, WIFI_SOCKET_DISCONNECTED);
+  (void)buffer;
+  (void)size;
 }
 
-void wifi_bind_socket() {
-  char addr_str[128];
-  int addr_family;
-  int ip_protocol;
-  struct sockaddr_in destAddr;
-  destAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-  destAddr.sin_family = AF_INET;
-  destAddr.sin_port = htons(5000);
-  addr_family = AF_INET;
-  ip_protocol = IPPROTO_IP;
-  inet_ntoa_r(destAddr.sin_addr, addr_str, sizeof(addr_str) - 1);
-    serverSock = socket(addr_family, SOCK_STREAM, ip_protocol);
-  if (serverSock < 0) {
-    ESP_LOGE(TAG, "Unable to create socket: errno %d", errno);
-  }
-  ESP_LOGD(TAG, "Socket created");
-
-  int err = bind(serverSock, (struct sockaddr *)&destAddr, sizeof(destAddr));
-  if (err != 0) {
-    ESP_LOGE(TAG, "Socket unable to bind: errno %d", errno);
-  }
-  ESP_LOGD(TAG, "Socket binded");
-
-  err = listen(serverSock, 1);
-  if (err != 0) {
-    ESP_LOGE(TAG, "Error occured during listen: errno %d", errno);
-  }
-  ESP_LOGD(TAG, "Socket listening");
-}
-
-void wifi_wait_for_socket_connected() {
-  ESP_LOGI(TAG, "Waiting for connection");
-  struct sockaddr sourceAddr;
-  uint addrLen = sizeof(sourceAddr);
-  clientConnection = accept(serverSock, (struct sockaddr *)&sourceAddr, &addrLen);
-  if (clientConnection < 0) {
-    ESP_LOGE(TAG, "Unable to accept connection: errno %d", errno);
-  } else {
-     ESP_LOGI(TAG, "Connection accepted");
-  }
-}
-
-void wifi_wait_for_disconnect() {
-  xEventGroupWaitBits(s_wifi_event_group, WIFI_SOCKET_DISCONNECTED, pdTRUE, pdFALSE, portMAX_DELAY);
-}
-
-static void wifi_task(void *pvParameters) {
-
-  s_wifi_event_group = xEventGroupCreate();
-
-  esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, event_handler, NULL, NULL);
-  esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP, event_handler, NULL, NULL);
-
-  wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-  ESP_ERROR_CHECK(esp_wifi_init(&cfg));
-    ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_NONE)); 
-
-  uint8_t mac[6];
-  ESP_ERROR_CHECK(esp_wifi_get_mac(ESP_IF_WIFI_AP, mac));
-  ESP_LOGD(TAG, "AP MAC is %x:%x:%x:%x:%x:%x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-  ESP_ERROR_CHECK(esp_wifi_get_mac(ESP_IF_WIFI_STA, mac));
-  ESP_LOGD(TAG, "STA MAC is %x:%x:%x:%x:%x:%x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-
-  wifi_bind_socket();
-
-  xEventGroupSetBits(startUpEventGroup, START_UP_MAIN_TASK);
-  while (1) {
-    //blink_period_ms = 500;
-    wifi_wait_for_socket_connected();
-    ESP_LOGI(TAG, "Client connected");
-
-    //blink_period_ms = 100;
-
-    // Not thread safe!
-    cpxInitRoute(CPX_T_ESP32, CPX_T_GAP8, CPX_F_WIFI_CTRL, &txp.route);
-    txp.data[0] = WIFI_CTRL_STATUS_CLIENT_CONNECTED;
-    txp.data[1] = 1;    // connected
-    txp.dataLength = 2;
-    espAppSendToRouterBlocking(&txp);
-
-    txp.route.destination = CPX_T_STM32;
-    espAppSendToRouterBlocking(&txp);
-
-    // Probably not the best, should be handled in some other way?
-    wifi_wait_for_disconnect();
-    ESP_LOGI(TAG, "Client disconnected");
-
-    // Not thread safe!
-    cpxInitRoute(CPX_T_ESP32, CPX_T_GAP8, CPX_F_WIFI_CTRL, &txp.route);
-    txp.data[0] = WIFI_CTRL_STATUS_CLIENT_CONNECTED;
-    txp.data[1] = 0;    // disconnected
-    txp.dataLength = 2;
-    espAppSendToRouterBlocking(&txp);
-
-    txp.route.destination = CPX_T_STM32;
-    espAppSendToRouterBlocking(&txp);
-  }
-}
-
-void wifi_led_task(void *pvParameters)
+static void wifi_sending_task(void *pvParameters)
 {
-  int ledstate = 0;
-  while(1) {
-    if(clientConnection == NO_CONNECTION){
-      gpio_set_level(BLINK_GPIO, !ledstate);
-      ledstate = !ledstate;
-      vTaskDelay(pdMS_TO_TICKS(500));
-    } else {
-      EventBits_t bits = xEventGroupWaitBits(s_wifi_event_group, WIFI_PACKET_SENDING | WIFI_PACKET_WAIT_SEND  , pdFALSE,pdFALSE,portMAX_DELAY);
-      if (bits & WIFI_PACKET_SENDING) {
-        gpio_set_level(BLINK_GPIO,1);
-        xEventGroupClearBits(s_wifi_event_group, WIFI_PACKET_SENDING);
-      }
-      if (bits & WIFI_PACKET_WAIT_SEND ) {
-        gpio_set_level(BLINK_GPIO,0);
-        xEventGroupClearBits(s_wifi_event_group, WIFI_PACKET_WAIT_SEND);
-      }
-    }
-  }
-}
-
-void wifi_send_packet(const char * buffer, size_t size) {
-  if (clientConnection != NO_CONNECTION) {
-    ESP_LOGD(TAG, "Sending WiFi packet of size %u", size);
-    xEventGroupSetBits(s_wifi_event_group, WIFI_PACKET_SENDING);
-    int err = send(clientConnection, buffer, size, 0);
-    if (err < 0) {
-      ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
-      close_client_socket();
-
-    }
-    xEventGroupSetBits(s_wifi_event_group, WIFI_PACKET_WAIT_SEND);
-  }
-}
-
-static void wifi_sending_task(void *pvParameters) {
   static WifiTransportPacket_t txp_wifi;
   static CPXRoutablePacket_t qPacket;
 
   xEventGroupSetBits(startUpEventGroup, START_UP_TX_TASK);
+
   while (1) {
     xQueueReceive(wifiTxQueue, &qPacket, portMAX_DELAY);
 
@@ -416,43 +287,34 @@ static void wifi_sending_task(void *pvParameters) {
 
     memcpy(txp_wifi.routablePayload.data, qPacket.data, qPacket.dataLength);
 
-    wifi_send_packet((const char *)&txp_wifi, txp_wifi.payloadLength + 2);
+    // TCP packet transmission removed.
   }
 }
 
-static void wifi_receiving_task(void *pvParameters) {
-  static WifiTransportPacket_t rxp_wifi;
-  int len;
+static void wifi_receiving_task(void *pvParameters)
+{
+  (void)pvParameters;
 
   xEventGroupSetBits(startUpEventGroup, START_UP_RX_TASK);
+
+  // TCP packet reception removed.
+  // Keep the task alive for existing startup synchronization.
   while (1) {
-    len = recv(clientConnection, &rxp_wifi, 2, 0);
-    if (len > 0) {
-      ESP_LOGD(TAG, "Wire data length %i", rxp_wifi.payloadLength);
-      int totalRxLen = 0;
-      do {
-        len = recv(clientConnection, &rxp_wifi.payload[totalRxLen], rxp_wifi.payloadLength - totalRxLen, 0);
-        ESP_LOGD(TAG, "Read %i bytes", len);
-        totalRxLen += len;
-      } while (totalRxLen < rxp_wifi.payloadLength);
-      ESP_LOG_BUFFER_HEX_LEVEL(TAG, &rxp_wifi, 10, ESP_LOG_DEBUG);
-      xQueueSend(wifiRxQueue, &rxp_wifi, portMAX_DELAY);
-    } else if (len == 0) {
-      close_client_socket();  //Reading 0 bytes most often means the client has disconnected.
-    } else {
-      vTaskDelay(10);
-    }
+    vTaskDelay(portMAX_DELAY);
   }
 }
 
-void wifi_transport_send(const CPXRoutablePacket_t* packet) {
+void wifi_transport_send(const CPXRoutablePacket_t* packet)
+{
   assert(packet->dataLength <= WIFI_TRANSPORT_MTU - CPX_ROUTING_PACKED_SIZE);
   xQueueSend(wifiTxQueue, packet, portMAX_DELAY);
 }
 
-void wifi_transport_receive(CPXRoutablePacket_t* packet) {
-  // Not reentrant safe. Assuming only one task is popping the queue
+void wifi_transport_receive(CPXRoutablePacket_t* packet)
+{
+  // Not reentrant safe. Assuming only one task is popping the queue.
   static WifiTransportPacket_t qPacket;
+
   xQueueReceive(wifiRxQueue, &qPacket, portMAX_DELAY);
 
   packet->dataLength = qPacket.payloadLength - CPX_ROUTING_PACKED_SIZE;
@@ -462,7 +324,46 @@ void wifi_transport_receive(CPXRoutablePacket_t* packet) {
   memcpy(packet->data, qPacket.routablePayload.data, packet->dataLength);
 }
 
-void wifi_init() {
+static void wifi_task(void *pvParameters)
+{
+  s_wifi_event_group = xEventGroupCreate();
+
+  esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, event_handler, NULL, NULL);
+  esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP, event_handler, NULL, NULL);
+
+  wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+  ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+  ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_NONE));
+
+  uint8_t mac[6];
+  ESP_ERROR_CHECK(esp_wifi_get_mac(ESP_IF_WIFI_AP, mac));
+  ESP_LOGD(TAG, "AP MAC is %x:%x:%x:%x:%x:%x",
+           mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+
+  ESP_ERROR_CHECK(esp_wifi_get_mac(ESP_IF_WIFI_STA, mac));
+  ESP_LOGD(TAG, "STA MAC is %x:%x:%x:%x:%x:%x",
+           mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+
+  xEventGroupSetBits(startUpEventGroup, START_UP_MAIN_TASK);
+
+  // No TCP server. WiFi is started through wifi_ctrl().
+  while (1) {
+    vTaskDelay(portMAX_DELAY);
+  }
+}
+
+void wifi_led_task(void *pvParameters)
+{
+  (void)pvParameters;
+
+  // TCP connection and packet activity LED behavior removed.
+  while (1) {
+    vTaskDelay(portMAX_DELAY);
+  }
+}
+
+void wifi_init()
+{
   esp_netif_init();
 
   s_wifi_event_group = xEventGroupCreate();
@@ -471,24 +372,31 @@ void wifi_init() {
   wifiTxQueue = xQueueCreate(WIFI_HOST_QUEUE_LENGTH, sizeof(CPXRoutablePacket_t));
 
   startUpEventGroup = xEventGroupCreate();
-  xEventGroupClearBits(startUpEventGroup, START_UP_MAIN_TASK | START_UP_RX_TASK | START_UP_TX_TASK | START_UP_CTRL_TASK);
+  xEventGroupClearBits(startUpEventGroup,
+                       START_UP_MAIN_TASK |
+                       START_UP_RX_TASK |
+                       START_UP_TX_TASK |
+                       START_UP_CTRL_TASK);
+
   xTaskCreate(wifi_task, "WiFi TASK", 5000, NULL, 1, NULL);
   xTaskCreate(wifi_sending_task, "WiFi TX", 5000, NULL, 1, NULL);
   xTaskCreate(wifi_receiving_task, "WiFi RX", 5000, NULL, 1, NULL);
   xTaskCreate(wifi_led_task, "WiFi LED", 5000, NULL, 1, NULL);
+
   ESP_LOGI(TAG, "Waiting for main, RX and TX tasks to start");
   xEventGroupWaitBits(startUpEventGroup,
                       START_UP_MAIN_TASK | START_UP_RX_TASK | START_UP_TX_TASK,
-                      pdTRUE, // Clear bits before returning
-                      pdTRUE, // Wait for all bits
+                      pdTRUE,
+                      pdTRUE,
                       portMAX_DELAY);
 
   xTaskCreate(wifi_ctrl, "WiFi CTRL", 5000, NULL, 1, NULL);
+
   ESP_LOGI(TAG, "Waiting for CTRL task to start");
   xEventGroupWaitBits(startUpEventGroup,
                       START_UP_CTRL_TASK,
-                      pdTRUE, // Clear bits before returning
-                      pdTRUE, // Wait for all bits
+                      pdTRUE,
+                      pdTRUE,
                       portMAX_DELAY);
 
   ESP_LOGI("WIFI", "Wifi initialized");

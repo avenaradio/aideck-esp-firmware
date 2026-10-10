@@ -39,7 +39,6 @@
 #endif
 
 extern const int WIFI_CONNECTED_BIT;
-extern const int WIFI_SOCKET_DISCONNECTED;
 extern EventGroupHandle_t s_wifi_event_group;
 
 typedef struct {
