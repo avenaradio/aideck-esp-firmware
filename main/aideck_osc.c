@@ -25,7 +25,7 @@
 static esp_osc_client_t client;
 static esp_osc_target_t target;
 
-int log_enabled = 1;
+bool battery_empty = false;
 
 void osc_send_floats(const char *topic, const char *format, float *values);
 static bool osc_callback(const char *topic, const char *format, esp_osc_value_t *values);
@@ -37,7 +37,7 @@ void osc_init(void){
     esp_osc_init(&client, OSC_BUFFER_SIZE, OSC_IN_PORT);
     // xTaskCreate(log_sender, "log_sender", 2048, NULL, 5, NULL);
     xTaskCreatePinnedToCore(read_receive_queue_task, "receiver", 4096, NULL, 10, NULL, 1);
-    esp_osc_send(&client, &target, "/drone/output/ready-to-fly", "");
+    esp_osc_send(&client, &target, "/drone/output/ready", "");
 }
 
 //TODO use esp_osc_send_v instead?
@@ -71,49 +71,49 @@ bool osc_send_target(float values[]){
     return esp_osc_send(&client, &target, "/drone/output/internal-target-pos-in-m", "fff", values[0], values[1], values[2]);
 }
 
-bool osc_send_empty_battery_landing(void){
-    return esp_osc_send(&client, &target, "/drone/output/empty-battery-landing", "");
+bool osc_send_battery_empty(void){
+    battery_empty = true;
+    return esp_osc_send(&client, &target, "/drone/output/battery-empty", "");
+}
+
+bool osc_send_landing(void){
+    return esp_osc_send(&client, &target, "/drone/output/landing", "");
 }
 
 static bool osc_callback(const char *topic, const char *format, esp_osc_value_t *values){
     ESP_LOGI(TAG, "Got message: %s (%s)", topic, format);
+    esp_osc_send(&client, &target, "/drone/output/osc_received" , "s", topic);
     // ESP_LOGI(TAG, "Constants are: x_max: %.3f %.3f, y_max: %.3f %.3f", global_constants.x_max_positive, global_constants.x_max_negative, global_constants.y_max_positive, global_constants.y_max_negative);
     AdmPolar_t polar = {0};
     AdmCartesian_t cart = {0};
 
-    // for (size_t i = 0; i < strlen(format); i++) {
-    //     switch (format[i]) {
-    //     case 'i':
-    //         ESP_LOGI(TAG, "==> i: %d", values[i].i);
-    //         break;
-
-    //     case 'h':
-    //         ESP_LOGI(TAG, "==> h: %lld", values[i].h);
-    //         break;
-
-    //     case 'f':
-    //         ESP_LOGI(TAG, "==> f: %f", values[i].f);
-    //         break;
-
-    //     case 'd':
-    //         ESP_LOGI(TAG, "==> d: %f", values[i].d);
-    //         break;
-
-    //     case 's':
-    //         ESP_LOGI(TAG, "==> s: %s", values[i].s);
-    //         break;
-
-    //     case 'b':
-    //         ESP_LOGI(TAG, "==> b: %.*s (%d)",
-    //                  values[i].bl,
-    //                  values[i].b,
-    //                  values[i].bl);
-    //         break;
-    //     }
-    // }
+    if (strcmp(topic, "/drone/control/current-position") == 0) {
+        Parameters_t params = {0};
+        get_parameters(&params);
+        ESP_LOGI(TAG, "Current params: xyz: %.2f %.2f %.2f, battery: %.2f", params.x, params.y, params.y, params.batteryP);
+        get_coords_from_parameters(&polar, &cart);
+        float values[3] = {cart.x, cart.y, cart.z};
+        osc_send_floats(topic, "fff", values);
+    }
+    if (strcmp(topic, "/drone/control/battery-status") == 0) {
+        Parameters_t params = {0};
+        get_parameters(&params);
+        float values[1] = {params.batteryP};
+        osc_send_floats(topic, "f", values);
+        ESP_LOGI(TAG, "Current params: xyz: %.2f %.2f %.2f, battery: %.2f", params.x, params.y, params.y, params.batteryP);
+    }
     
-    esp_osc_send(&client, &target, "/drone/output/osc_received" , "s", topic);
+    // If battery low, stop here, dont trigger movements
+    if (battery_empty) {
+        return true;
+    }
 
+    if (strcmp(topic, "/drone/control/land") == 0) {
+        GoToPosition_t land_now ={0.0f, 0.0f, -1.0f}; // Control will land if z is <= 0
+        set_goto_position(&land_now);
+    }
+
+    // ADM-OSC implementation
     if (strcmp(topic, "/adm/obj/16/azim") == 0) {
         if (strcmp(format, "f") == 0) {
             azim(values[0].f);
@@ -211,23 +211,6 @@ static bool osc_callback(const char *topic, const char *format, esp_osc_value_t 
             osc_send_floats(topic, "f", values);
             // ESP_LOGI(TAG, "OSC send topic=%s format=%s result=%s", topic, format, result ? "success" : "failed");
         }
-    }
-    // DRONE SPECIFIC OSC
-    else if (strcmp(topic, "/drone/control/current-position") == 0) {
-        get_coords_from_parameters(&polar, &cart);
-        float values[3] = {cart.x, cart.y, cart.z};
-        osc_send_floats(topic, "fff", values);
-    }
-    else if (strcmp(topic, "/drone/control/battery-status") == 0) {
-        Parameters_t params = {0};
-        get_parameters(&params);
-        float values[1] = {params.batteryP};
-        osc_send_floats(topic, "f", values);
-        ESP_LOGI(TAG, "Current params: xyz: %.2f %.2f %.2f, battery: %.2f", params.x, params.y, params.y, params.batteryP);
-    }
-    else if (strcmp(topic, "/drone/control/land") == 0) {
-        GoToPosition_t land_now ={0.0f, 0.0f, -1.0f}; // Control will land if z is <= 0
-        set_goto_position(&land_now);
     }
     return true;
 }

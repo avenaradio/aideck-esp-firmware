@@ -18,6 +18,7 @@ typedef enum {
     CPX_IF_GOTO_ACK = 3,
     CPX_IF_CONSTANTS = 4,
     CPX_IF_BATTERY_EMPTY = 5,
+    CPX_IF_LANDING = 6,
 } CPXInternalFunction_t;
 
 static esp_routable_packet_t txp_to_app;
@@ -120,8 +121,12 @@ static void aideck_receive_cpx_task(void *pvParameters) {
             case CPX_IF_BATTERY_EMPTY:
                 if (!battery_is_empty) {
                     battery_is_empty = true;
-                    osc_send_empty_battery_landing();
+                    osc_send_battery_empty();
                 }
+                break;
+            case CPX_IF_LANDING:
+                osc_send_landing();
+                break;
             default:
                 break;
         }
