@@ -33,12 +33,13 @@ Drone coords
 */
 
 #include <math.h>
+#include <string.h>
 
 #include "aideck_global_queues.h"
 #include "esp_log.h"
 #include "freertos/projdefs.h"
 #include "aideck_offset_math.h"
-#include "aideck_osc.h"
+#include "aideck_global_queues.h"
 #define TAG "OFFSET_MATH"
 
 #define ADM_DEG_TO_RAD (M_PI / 180.0)
@@ -268,7 +269,7 @@ BaseType_t get_coords_from_parameters(AdmPolar_t *polar, AdmCartesian_t *cart){
 BaseType_t add_goto_to_queue(AdmCartesian_t *cart){
     //ESP_LOGI(TAG, "set_goto_from_cartesian() started with: x=%f y=%f z=%f", cart->x, cart->y, cart->z);
     if (cart == NULL) {return pdFALSE;}
-    GoToPosition_t new_position = {0};
+    GoToPosition_and_errors_t new_position = {0};
     // Denormalize
     float x = 0.0f;
     float y = 0.0f;
@@ -300,8 +301,13 @@ BaseType_t add_goto_to_queue(AdmCartesian_t *cart){
     new_position.y = y + Y_OFFSET;
     new_position.z = z + Z_OFFSET;
     //ESP_LOGI(TAG, "set_goto_from_cartesian() minus offset: x=%f y=%f z=%f", new_position.x, new_position.y, new_position.z);
-    float adm_target_pos[3] = {adm_cartesian.x, adm_cartesian.y, adm_cartesian.z};
-    osc_send_floats("/drone/output/target-position", "fff", adm_target_pos);
+    Osc_send_t osc_send_message = {0};
+    strcpy(osc_send_message.topic, "/drone/output/target-position");
+    strcpy(osc_send_message.format, "fff");
+    osc_send_message.af = adm_cartesian.x;
+    osc_send_message.bf = adm_cartesian.y;
+    osc_send_message.cf = adm_cartesian.z;
+    set_osc_send(&osc_send_message);
     BaseType_t result = set_goto_position(&new_position);
     return result;
 }

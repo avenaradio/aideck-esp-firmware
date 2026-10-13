@@ -4,9 +4,6 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 
-// #define LOG_MESSAGE_SIZE 256
-// typedef char log_message_t[LOG_MESSAGE_SIZE];
-
 typedef struct{
     float x;
     float y;
@@ -20,9 +17,17 @@ typedef struct{
     float x;
     float y;
     float z;
-} GoToPosition_t;
-BaseType_t set_goto_position(const GoToPosition_t *goto_fix_position);
-BaseType_t get_goto_position(GoToPosition_t *goto_fix_position);
+    char landing;
+    char avoiding_object;
+    char start_failed;
+    char battery_empty;
+    char position_lost;
+} GoToPosition_and_errors_t;
+BaseType_t set_goto_position(const GoToPosition_and_errors_t *goto_fix_position);
+BaseType_t get_goto_position(GoToPosition_and_errors_t *goto_fix_position);
+
+BaseType_t set_goto_ack(const GoToPosition_and_errors_t *goto_ack);
+BaseType_t get_goto_ack(GoToPosition_and_errors_t *goto_ack);
 
 typedef struct{
     float x_max_positive;
@@ -34,8 +39,16 @@ typedef struct{
 } Constants_t;
 extern Constants_t global_constants;
 
-// BaseType_t set_log(const log_message_t *log_message);
-// BaseType_t get_log(log_message_t *log_message);
+typedef struct{
+    char topic[50];
+    char format[4];
+    float af;
+    float bf;
+    float cf;
+    char string[50];
+} Osc_send_t;
+BaseType_t set_osc_send(const Osc_send_t *osc_send_floats);
+BaseType_t get_osc_send(Osc_send_t *osc_send_floats);
 
 void global_parameters_init(void);
 
