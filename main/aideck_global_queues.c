@@ -18,7 +18,7 @@ void global_parameters_init(void){
     parameters_queue = xQueueCreate(1, sizeof(Parameters_t));
     goto_fix_position_queue = xQueueCreate(50, sizeof(GoToPosition_and_errors_t));
     goto_ack_queue = xQueueCreate(5, sizeof(GoToPosition_and_errors_t));
-    osc_send_queue = xQueueCreate(10, sizeof(Osc_send_t));
+    osc_send_queue = xQueueCreate(25, sizeof(Osc_send_t));
 }
 
 BaseType_t set_parameters(const Parameters_t *parameters){
