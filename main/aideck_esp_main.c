@@ -139,6 +139,7 @@ void app_main(void)
     espTransportInit();
     uart_transport_init();
     com_init();
+    global_parameters_init();
     wifi_init();
     router_init();
     esp_log_set_vprintf(cpx_and_uart_vprintf);
@@ -154,7 +155,6 @@ void app_main(void)
         pdFALSE,             // Wait for any requested bit
         portMAX_DELAY        // Wait indefinitely
     );
-    global_parameters_init();
     aideck_cpx_init();
     osc_init();
     // esp_log_set_vprintf(osc_and_cpx_vprintf);

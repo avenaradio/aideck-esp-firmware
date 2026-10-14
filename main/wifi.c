@@ -39,6 +39,7 @@
 #include "nvs_flash.h"
 #include "driver/gpio.h"
 #include "esp_netif.h"
+#include "aideck_global_queues.h"
 
 #include "com.h"
 
@@ -127,7 +128,16 @@ static void event_handler(void* handlerArg, esp_event_base_t eventBase, int32_t 
       case IP_EVENT_STA_GOT_IP:
         {
           ip_event_got_ip_t* event = (ip_event_got_ip_t*)eventData;
-          ESP_LOGI(TAG, "got ip: " IPSTR, IP2STR(&event->ip_info.ip));
+          char ip_str[16];
+          snprintf(ip_str, sizeof(ip_str), IPSTR, IP2STR(&event->ip_info.ip));
+          ESP_LOGI(TAG, "got ip: %s", ip_str);
+
+          Osc_send_t osc_send_message = {0};
+          strlcpy(osc_send_message.topic, "/drone/output/ip", sizeof(osc_send_message.topic));
+          strlcpy(osc_send_message.format, "s", sizeof(osc_send_message.format));
+          strlcpy(osc_send_message.string, ip_str, sizeof(osc_send_message.string));
+          set_osc_send(&osc_send_message);
+
 
           wifi_ap_record_t ap_info;
           ESP_ERROR_CHECK(esp_wifi_sta_get_ap_info(&ap_info));
