@@ -17,7 +17,7 @@
 
 #define OSC_IN_PORT 9001
 #define OSC_OUT_PORT 9001
-#define OSC_OUT_ADDRESS "192.168.178.255" // 192.168.178.255  192.168.1.255  149.222.206.227
+#define OSC_OUT_ADDRESS "192.168.1.255" // 192.168.178.255  192.168.1.255  149.222.206.227
 #define OSC_BUFFER_SIZE 1024
 // #define BROADCAST_IP "149.222.206.227"
 // #define BROADCAST_PORT 9000
@@ -85,9 +85,15 @@ static void ack_sender_task(void *parameter){
 
 static bool osc_callback(const char *topic, const char *format, esp_osc_value_t *values){
     if (strncmp(topic, "/drone/output", strlen("/drone/output")) == 0) {
-        // It starts with "/drone/output"
+        // Skip if starts with "/drone/output"
         return true;
     }
+    // if (strncmp(topic, "/adm/obj/16/gain", strlen("/adm/obj/16/gain")) == 0) {
+    //     return true;
+    // }
+    // if (strncmp(topic, "/adm/obj/16/mute", strlen("/adm/obj/16/mute")) == 0) {
+    //     return true;
+    // }
     ESP_LOGI(TAG, "Got message: %s (%s)", topic, format);
     Osc_send_t osc_send_message = {0};
     Osc_send_t osc_instant_response = {0};
@@ -133,6 +139,11 @@ static bool osc_callback(const char *topic, const char *format, esp_osc_value_t 
         GoToPosition_and_errors_t land_now = {0};
         land_now.landing = 1;
         set_goto_position(&land_now);
+    }
+    if (strcmp(topic, "/drone/control/disable_avoidance") == 0) {
+        GoToPosition_and_errors_t dis_av = {0};
+        dis_av.disable_avoidance = 1;
+        set_goto_position(&dis_av);
     }
 
     // ADM-OSC implementation

@@ -22,6 +22,7 @@ typedef enum {
     CPX_IF_AVOIDING_OBJECT = 7,
     CPX_IF_START_FAILED = 8,
     CPX_IF_POSITION_LOST = 9,
+    CPX_IF_DISABLE_AVOIDANCE = 10,
 } CPXInternalFunction_t;
 
 static esp_routable_packet_t txp_to_app;
@@ -53,6 +54,8 @@ static void aideck_send_cpx_task(void *pvParameters) {
             //ESP_LOGI(TAG, "Got goto_fix_position_get: x=%.4f, y=%.4f, z=%.4f", goto_fix_position.x, goto_fix_position.y, goto_fix_position.z);
             if (goto_position.landing) {
                 send_empty_IF(CPX_IF_LANDING);
+            } else if (goto_position.disable_avoidance) {
+                send_empty_IF(CPX_IF_DISABLE_AVOIDANCE);
             } else {
                 send_goto_position_to_stm(goto_position.x, goto_position.y, goto_position.z);
             }

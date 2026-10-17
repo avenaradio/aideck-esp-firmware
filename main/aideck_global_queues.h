@@ -22,6 +22,7 @@ typedef struct{
     char start_failed;
     char battery_empty;
     char position_lost;
+    char disable_avoidance;
 } GoToPosition_and_errors_t;
 BaseType_t set_goto_position(const GoToPosition_and_errors_t *goto_fix_position);
 BaseType_t get_goto_position(GoToPosition_and_errors_t *goto_fix_position);
