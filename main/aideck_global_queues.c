@@ -14,7 +14,7 @@ QueueHandle_t osc_send_queue = NULL;
 
 Constants_t global_constants = {0};
 
-void global_parameters_init(void){
+void global_queues_init(void){
     parameters_queue = xQueueCreate(1, sizeof(Parameters_t));
     goto_fix_position_queue = xQueueCreate(50, sizeof(GoToPosition_and_errors_t));
     goto_ack_queue = xQueueCreate(5, sizeof(GoToPosition_and_errors_t));

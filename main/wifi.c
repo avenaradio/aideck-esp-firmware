@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "aideck_global_queues.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/semphr.h"
@@ -130,6 +131,14 @@ static void event_handler(void* handlerArg, esp_event_base_t eventBase, int32_t 
           ESP_LOGI(TAG, "IP:      " IPSTR, IP2STR(&event->ip_info.ip));
           ESP_LOGI(TAG, "Netmask: " IPSTR, IP2STR(&event->ip_info.netmask));
           ESP_LOGI(TAG, "Gateway: " IPSTR, IP2STR(&event->ip_info.gw));
+          Osc_send_t osc_send_message = {0};
+          strcpy(osc_send_message.topic, "/drone/output/ip");
+          strcpy(osc_send_message.format, "s");
+          snprintf(osc_send_message.string,
+            sizeof(osc_send_message.string),
+            IPSTR,
+            IP2STR(&event->ip_info.ip));
+          set_osc_send(&osc_send_message);
 
           wifi_ps_type_t ps_type;
           esp_wifi_get_ps(&ps_type);

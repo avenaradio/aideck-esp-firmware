@@ -50,6 +50,6 @@ typedef struct{
 BaseType_t set_osc_send(const Osc_send_t *osc_send_floats);
 BaseType_t get_osc_send(Osc_send_t *osc_send_floats);
 
-void global_parameters_init(void);
+void global_queues_init(void);
 
 #endif /* AIDECK_GLOBAL_QUEUES_H */

@@ -65,31 +65,6 @@ int cpx_and_uart_vprintf(const char * fmt, va_list ap) {
     return len;
 }
 
-// // Sending print to both lead to osc message loss
-// int osc_and_cpx_vprintf(const char *fmt, va_list ap){
-//     va_list ap_copy;
-//     va_copy(ap_copy, ap);
-//     int len = vprintf(fmt, ap);
-//     // cpxInitRoute(CPX_T_ESP32, CPX_T_STM32, CPX_F_CONSOLE, &txp.route);
-//     if (len < 0) {
-//         va_end(ap_copy);
-//         return len;
-//     }
-//     char data[LOG_MESSAGE_SIZE];
-//     int required = vsnprintf(data, sizeof(data), fmt, ap_copy);
-//     va_end(ap_copy);
-//     if (required >= 0) {
-//         if (required >= sizeof(data)) {
-//             data[sizeof(data) - 1] = '\0';
-//         }
-//         // txp.dataLength = strlen(data) +1;
-//         // memcpy(txp.data, data, txp.dataLength);
-//         set_log(&data);
-//     }
-//     return len;
-// }
-
-
 #define DEBUG_TXD_PIN (GPIO_NUM_0) // Nina 27 /SYSBOOT) => 0
 
 void app_main(void)
@@ -136,6 +111,7 @@ void app_main(void)
     ESP_LOGI("SYS", "\n\n -- Starting up --\n");
     ESP_LOGI("SYS", "Minimum free heap size: %d bytes", esp_get_minimum_free_heap_size());
 
+    global_queues_init();
     espTransportInit();
     uart_transport_init();
     com_init();
@@ -145,7 +121,6 @@ void app_main(void)
     system_init();
     discovery_init();
 
-    // xTaskCreate(wifi_monitor_task, "Wifi reconnect", 5000, NULL, 1, NULL);
     // Wait for wifi connection
     xEventGroupWaitBits(
         s_wifi_event_group,
@@ -154,10 +129,8 @@ void app_main(void)
         pdFALSE,             // Wait for any requested bit
         portMAX_DELAY        // Wait indefinitely
     );
-    global_parameters_init();
     aideck_cpx_init();
     osc_init();
-    // esp_log_set_vprintf(osc_and_cpx_vprintf);
 
     while(1) {
         vTaskDelay(2000);
