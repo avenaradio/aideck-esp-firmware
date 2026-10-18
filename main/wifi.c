@@ -127,7 +127,13 @@ static void event_handler(void* handlerArg, esp_event_base_t eventBase, int32_t 
       case IP_EVENT_STA_GOT_IP:
         {
           ip_event_got_ip_t* event = (ip_event_got_ip_t*)eventData;
-          ESP_LOGI(TAG, "got ip: " IPSTR, IP2STR(&event->ip_info.ip));
+          ESP_LOGI(TAG, "IP:      " IPSTR, IP2STR(&event->ip_info.ip));
+          ESP_LOGI(TAG, "Netmask: " IPSTR, IP2STR(&event->ip_info.netmask));
+          ESP_LOGI(TAG, "Gateway: " IPSTR, IP2STR(&event->ip_info.gw));
+
+          wifi_ps_type_t ps_type;
+          esp_wifi_get_ps(&ps_type);
+          ESP_LOGI(TAG, "Current Wi-Fi Power Save Mode: %d (0=NONE, 1=MIN_MODEM, 2=MAX_MODEM)", ps_type);
 
           wifi_ap_record_t ap_info;
           ESP_ERROR_CHECK(esp_wifi_sta_get_ap_info(&ap_info));

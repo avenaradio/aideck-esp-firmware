@@ -1,3 +1,7 @@
+Start codium with dev containers extension
+```sh
+codium --enable-proposed-api s-h-a-d-o-w.dev-containers-oss
+```
 ###### Build
 ```sh
 idf.py build
