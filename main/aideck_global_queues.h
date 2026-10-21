@@ -23,12 +23,12 @@ typedef struct{
     char battery_empty;
     char position_lost;
     char disable_avoidance;
-} GoToPosition_and_errors_t;
-BaseType_t set_goto_position(const GoToPosition_and_errors_t *goto_fix_position);
-BaseType_t get_goto_position(GoToPosition_and_errors_t *goto_fix_position);
+} Instructions_t;
+BaseType_t set_instruction(const Instructions_t *instruction);
+BaseType_t get_instruction(Instructions_t *instruction);
 
-BaseType_t set_goto_ack(const GoToPosition_and_errors_t *goto_ack);
-BaseType_t get_goto_ack(GoToPosition_and_errors_t *goto_ack);
+BaseType_t set_instruction_ack(const Instructions_t *instruction);
+BaseType_t get_instruction_ack(Instructions_t *instruction);
 
 typedef struct{
     float x_max_positive;

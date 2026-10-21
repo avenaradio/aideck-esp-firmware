@@ -44,13 +44,13 @@ void osc_init(void){
 }
 
 static void ack_sender_task(void *parameter){
-    GoToPosition_and_errors_t ack = {0};
+    Instructions_t ack = {0};
     Osc_send_t osc_send_message = {0};
     // esp_osc_send(&client, &broadcast_target, "/drone/output/register-broadcast", "");
     vTaskDelay(5);
     esp_osc_send(&client, &target, "/drone/output/ready", "");
     while (1) {
-        if (get_goto_ack(&ack) == pdPASS) {
+        if (get_instruction_ack(&ack) == pdPASS) {
             if (ack.battery_empty) {
                 esp_osc_send(&client, &target, "/drone/output/battery-empty", "");
             } else if (ack.landing) {
@@ -136,14 +136,14 @@ static bool osc_callback(const char *topic, const char *format, esp_osc_value_t 
     }
 
     if (strcmp(topic, "/drone/control/land") == 0) {
-        GoToPosition_and_errors_t land_now = {0};
+        Instructions_t land_now = {0};
         land_now.landing = 1;
-        set_goto_position(&land_now);
+        set_instruction(&land_now);
     }
     if (strcmp(topic, "/drone/control/disable_avoidance") == 0) {
-        GoToPosition_and_errors_t dis_av = {0};
+        Instructions_t dis_av = {0};
         dis_av.disable_avoidance = 1;
-        set_goto_position(&dis_av);
+        set_instruction(&dis_av);
     }
 
     // ADM-OSC implementation

@@ -13,9 +13,9 @@
 
 typedef enum {
     CPX_IF_INIT = 0,
-    CPX_IF_GOTO_FIXED_COORDINATES = 1,
+    CPX_IF_POSITION = 1,
     CPX_IF_NEW_PARAMETERS = 2,
-    CPX_IF_GOTO_ACK = 3,
+    CPX_IF_POSITION_ACK = 3,
     CPX_IF_CONSTANTS = 4,
     CPX_IF_BATTERY_EMPTY = 5,
     CPX_IF_LANDING = 6,
@@ -35,7 +35,7 @@ bool battery_is_empty = false;
 static void aideck_receive_cpx_task(void *pvParameters);
 void write_parameters_to_queue(float x, float y, float z, float batteryP);
 static void aideck_send_cpx_task(void *pvParameters);
-void send_goto_position_to_stm(float x, float y, float z);
+void send_position_to_stm(float x, float y, float z);
 void send_empty_IF(CPXInternalFunction_t internal_function);
 void write_float_to_uint8_array(float value, uint8_t array[], uint16_t position);
 float read_uin8_array_to_float(const uint8_t array[], uint16_t position);
@@ -48,16 +48,16 @@ void aideck_cpx_init() {
 
 //------------------------------------- SEND ----------------------------------------------------//
 static void aideck_send_cpx_task(void *pvParameters) {
-    GoToPosition_and_errors_t goto_position = {0};
+    Instructions_t position = {0};
     while (1) {
-        if (get_goto_position(&goto_position) == pdPASS) {
-            //ESP_LOGI(TAG, "Got goto_fix_position_get: x=%.4f, y=%.4f, z=%.4f", goto_fix_position.x, goto_fix_position.y, goto_fix_position.z);
-            if (goto_position.landing) {
+        if (get_instruction(&position) == pdPASS) {
+            //ESP_LOGI(TAG, "Got position from queue: x=%.4f, y=%.4f, z=%.4f", position.x, position.y, position.z);
+            if (position.landing) {
                 send_empty_IF(CPX_IF_LANDING);
-            } else if (goto_position.disable_avoidance) {
+            } else if (position.disable_avoidance) {
                 send_empty_IF(CPX_IF_DISABLE_AVOIDANCE);
             } else {
-                send_goto_position_to_stm(goto_position.x, goto_position.y, goto_position.z);
+                send_position_to_stm(position.x, position.y, position.z);
             }
         }
         vTaskDelay(10);
@@ -65,11 +65,11 @@ static void aideck_send_cpx_task(void *pvParameters) {
 }
 
 
-void send_goto_position_to_stm(float x, float y, float z){
+void send_position_to_stm(float x, float y, float z){
     int parameters_count = 3;
-    ESP_LOGI(TAG, "Sending goto_fix_position to STM x=%.4f, y=%.4f, z=%.4f", x, y, z);
+    ESP_LOGI(TAG, "Sending position to STM x=%.4f, y=%.4f, z=%.4f", x, y, z);
     cpxInitRoute(CPX_T_ESP32, CPX_T_STM32, CPX_F_APP, &txp_to_app.route); // Add route to txp_to_app
-    txp_to_app.data[0] = (uint8_t)CPX_IF_GOTO_FIXED_COORDINATES;
+    txp_to_app.data[0] = (uint8_t)CPX_IF_POSITION;
     write_float_to_uint8_array(x, txp_to_app.data, 1);
     write_float_to_uint8_array(y, txp_to_app.data, 4+1);
     write_float_to_uint8_array(z, txp_to_app.data, 8+1);
@@ -87,7 +87,7 @@ void send_empty_IF(CPXInternalFunction_t internal_function){
 //------------------------------------- RECEIVE ----------------------------------------------------//
 static void aideck_receive_cpx_task(void *pvParameters) {
     while (1) {
-        GoToPosition_and_errors_t ack = {0};
+        Instructions_t ack = {0};
         com_receive_aideck_app_blocking(&rxp);
         CPXInternalFunction_t intFunction = (CPXInternalFunction_t)rxp.data[0];
         switch (intFunction) {
@@ -98,11 +98,11 @@ static void aideck_receive_cpx_task(void *pvParameters) {
                     read_uin8_array_to_float(rxp.data, 1+8),
                     read_uin8_array_to_float(rxp.data, 1+12));
                 break;
-            case CPX_IF_GOTO_ACK: {
+            case CPX_IF_POSITION_ACK: {
                 ack.x = read_uin8_array_to_float(rxp.data, 1);
                 ack.y = read_uin8_array_to_float(rxp.data, 1+4);
                 ack.z = read_uin8_array_to_float(rxp.data, 1+8);
-                set_goto_ack(&ack);
+                set_instruction_ack(&ack);
                 break;
             }
             case CPX_IF_CONSTANTS: {
@@ -133,27 +133,27 @@ static void aideck_receive_cpx_task(void *pvParameters) {
                 if (!battery_is_empty) {
                     battery_is_empty = true;
                     ack.battery_empty = 1;
-                    set_goto_ack(&ack);
+                    set_instruction_ack(&ack);
                 }
                 break;
             case CPX_IF_LANDING: {
                 ack.landing = 1;
-                set_goto_ack(&ack);
+                set_instruction_ack(&ack);
                 break;
             }
             case CPX_IF_AVOIDING_OBJECT: {
                 ack.avoiding_object = 1;
-                set_goto_ack(&ack);
+                set_instruction_ack(&ack);
                 break;
             }
             case CPX_IF_START_FAILED: {
                 ack.start_failed = 1;
-                set_goto_ack(&ack);
+                set_instruction_ack(&ack);
                 break;
             }
             case CPX_IF_POSITION_LOST: {
                 ack.position_lost = 1;
-                set_goto_ack(&ack);
+                set_instruction_ack(&ack);
                 break;
             }
             default:
