@@ -115,6 +115,7 @@ void app_main(void)
     espTransportInit();
     uart_transport_init();
     com_init();
+    global_parameters_init();
     wifi_init();
     router_init();
     esp_log_set_vprintf(cpx_and_uart_vprintf);

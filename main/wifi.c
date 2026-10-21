@@ -40,6 +40,7 @@
 #include "nvs_flash.h"
 #include "driver/gpio.h"
 #include "esp_netif.h"
+#include "aideck_global_queues.h"
 
 #include "com.h"
 

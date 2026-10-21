@@ -62,7 +62,7 @@ AdmCartesian_t adm_cartesian = {0};
 BaseType_t adm_polar_to_cartesian(AdmPolar_t *polar, AdmCartesian_t *cart);
 BaseType_t adm_cartesian_to_polar(AdmCartesian_t *cart, AdmPolar_t *polar);
 BaseType_t get_coords_from_parameters(AdmPolar_t *polar, AdmCartesian_t *cart);
-BaseType_t add_goto_to_queue(AdmCartesian_t *cart);
+BaseType_t add_position_to_queue(AdmCartesian_t *cart);
 static float clamp_float(float value, float min, float max);
 
 // -------------------------------- ADM-OSC processing ----------------------------------------- //
@@ -70,21 +70,21 @@ void azim(float azimuth) {
     //get_coords_from_parameters(&adm_polar, &adm_cartesian);
     adm_polar.azimuth = azimuth;
     adm_polar_to_cartesian(&adm_polar, &adm_cartesian);
-    add_goto_to_queue(&adm_cartesian);
+    add_position_to_queue(&adm_cartesian);
 }
 
 void elev(float elevation) {
     //get_coords_from_parameters(&adm_polar, &adm_cartesian);
     adm_polar.elevation = elevation;
     adm_polar_to_cartesian(&adm_polar, &adm_cartesian);
-    add_goto_to_queue(&adm_cartesian);
+    add_position_to_queue(&adm_cartesian);
 }
 
 void dist(float distance) {
     //get_coords_from_parameters(&adm_polar, &adm_cartesian);
     adm_polar.distance = distance;
     adm_polar_to_cartesian(&adm_polar, &adm_cartesian);
-    add_goto_to_queue(&adm_cartesian);
+    add_position_to_queue(&adm_cartesian);
 }
 
 void aed(float azimuth, float elevation, float distance) {
@@ -93,28 +93,28 @@ void aed(float azimuth, float elevation, float distance) {
     adm_polar.elevation = elevation;
     adm_polar.distance = distance;
     adm_polar_to_cartesian(&adm_polar, &adm_cartesian);
-    add_goto_to_queue(&adm_cartesian);
+    add_position_to_queue(&adm_cartesian);
 }
 
 void x(float x_position) {
     //get_coords_from_parameters(&adm_polar, &adm_cartesian);
     adm_cartesian.x = x_position;
     adm_cartesian_to_polar(&adm_cartesian, &adm_polar);
-    add_goto_to_queue(&adm_cartesian);
+    add_position_to_queue(&adm_cartesian);
 }
 
 void y(float y_position) {
     //get_coords_from_parameters(&adm_polar, &adm_cartesian);
     adm_cartesian.y = y_position;
     adm_cartesian_to_polar(&adm_cartesian, &adm_polar);
-    add_goto_to_queue(&adm_cartesian);
+    add_position_to_queue(&adm_cartesian);
 }
 
 void z(float z_position) {
     //get_coords_from_parameters(&adm_polar, &adm_cartesian);
     adm_cartesian.z = z_position;
     adm_cartesian_to_polar(&adm_cartesian, &adm_polar);
-    add_goto_to_queue(&adm_cartesian);
+    add_position_to_queue(&adm_cartesian);
 }
 
 void xy(float x_position, float y_position) {
@@ -122,7 +122,7 @@ void xy(float x_position, float y_position) {
     adm_cartesian.x = x_position;
     adm_cartesian.y = y_position;
     adm_cartesian_to_polar(&adm_cartesian, &adm_polar);
-    add_goto_to_queue(&adm_cartesian);
+    add_position_to_queue(&adm_cartesian);
 }
 
 void xyz(float x_position, float y_position, float z_position) {
@@ -134,7 +134,7 @@ void xyz(float x_position, float y_position, float z_position) {
     adm_cartesian.y = y_position;
     adm_cartesian.z = z_position;
     adm_cartesian_to_polar(&adm_cartesian, &adm_polar);
-    add_goto_to_queue(&adm_cartesian);
+    add_position_to_queue(&adm_cartesian);
 }
 
 void dmax(float dmax){
@@ -264,12 +264,12 @@ BaseType_t get_coords_from_parameters(AdmPolar_t *polar, AdmCartesian_t *cart){
 }
 
 /*
- * Takes adm cartesian coords and sends drone goto fixed position
+ * Takes adm cartesian coords and adds position to send queue
  */
-BaseType_t add_goto_to_queue(AdmCartesian_t *cart){
-    //ESP_LOGI(TAG, "set_goto_from_cartesian() started with: x=%f y=%f z=%f", cart->x, cart->y, cart->z);
+BaseType_t add_position_to_queue(AdmCartesian_t *cart){
+    //ESP_LOGI(TAG, "add_position_to_queue() started with: x=%f y=%f z=%f", cart->x, cart->y, cart->z);
     if (cart == NULL) {return pdFALSE;}
-    GoToPosition_and_errors_t new_position = {0};
+    Instructions_t new_position = {0};
     // Denormalize
     float x = 0.0f;
     float y = 0.0f;
@@ -296,11 +296,11 @@ BaseType_t add_goto_to_queue(AdmCartesian_t *cart){
         }
     }
     
-    //ESP_LOGI(TAG, "set_goto_from_cartesian() denormalized: x=%f y=%f z=%f", x, y, z);
+    //ESP_LOGI(TAG, "add_position_to_queue() denormalized: x=%f y=%f z=%f", x, y, z);
     new_position.x = x + X_OFFSET;
     new_position.y = y + Y_OFFSET;
     new_position.z = z + Z_OFFSET;
-    //ESP_LOGI(TAG, "set_goto_from_cartesian() minus offset: x=%f y=%f z=%f", new_position.x, new_position.y, new_position.z);
+    //ESP_LOGI(TAG, "add_position_to_queue() minus offset: x=%f y=%f z=%f", new_position.x, new_position.y, new_position.z);
     Osc_send_t osc_send_message = {0};
     strcpy(osc_send_message.topic, "/drone/output/target-position");
     strcpy(osc_send_message.format, "fff");
@@ -308,7 +308,7 @@ BaseType_t add_goto_to_queue(AdmCartesian_t *cart){
     osc_send_message.bf = adm_cartesian.y;
     osc_send_message.cf = adm_cartesian.z;
     set_osc_send(&osc_send_message);
-    BaseType_t result = set_goto_position(&new_position);
+    BaseType_t result = set_instruction(&new_position);
     return result;
 }
 
