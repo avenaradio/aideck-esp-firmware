@@ -17,7 +17,7 @@
 
 #define OSC_IN_PORT 9001
 #define OSC_OUT_PORT 9001
-#define OSC_OUT_ADDRESS "255.255.255.255" // 192.168.178.255  192.168.1.255  149.222.206.227   10.138.224.255
+#define OSC_OUT_ADDRESS "192.168.1.255" // 192.168.178.255  192.168.1.255  149.222.206.227   10.138.224.255
 
 #define OSC_BUFFER_SIZE 1024
 // #define BROADCAST_IP "149.222.206.227"
@@ -61,7 +61,9 @@ static void ack_sender_task(void *parameter){
             } else if (ack.start_failed) {
                 esp_osc_send(&client, &target, "/drone/output/start-failed", "");
             } else if (ack.position_lost) {
-                esp_osc_send(&client, &target, "/drone/output/position_lost", "");
+                esp_osc_send(&client, &target, "/drone/output/position-lost", "");
+            } else if (ack.disable_avoidance) {
+                esp_osc_send(&client, &target, "/drone/output/avoidance-disabled", "");
             } else {
                 esp_osc_send(&client, &target, "/drone/output/internal-target-pos-in-m", "fff", ack.x, ack.y, ack.z);
             }
@@ -98,7 +100,7 @@ static bool osc_callback(const char *topic, const char *format, esp_osc_value_t 
     ESP_LOGI(TAG, "Got message: %s (%s)", topic, format);
     Osc_send_t osc_send_message = {0};
     Osc_send_t osc_instant_response = {0};
-    strcpy(osc_instant_response.topic, "/drone/output/osc_received");
+    strcpy(osc_instant_response.topic, "/drone/output/osc-received");
     strcpy(osc_instant_response.format, "s");
     strcpy(osc_instant_response.string, topic);
     set_osc_send(&osc_instant_response);
@@ -141,7 +143,7 @@ static bool osc_callback(const char *topic, const char *format, esp_osc_value_t 
         land_now.landing = 1;
         set_instruction(&land_now);
     }
-    if (strcmp(topic, "/drone/control/disable_avoidance") == 0) {
+    if (strcmp(topic, "/drone/control/disable-avoidance") == 0) {
         Instructions_t dis_av = {0};
         dis_av.disable_avoidance = 1;
         set_instruction(&dis_av);

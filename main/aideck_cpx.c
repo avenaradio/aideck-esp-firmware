@@ -48,16 +48,16 @@ void aideck_cpx_init() {
 
 //------------------------------------- SEND ----------------------------------------------------//
 static void aideck_send_cpx_task(void *pvParameters) {
-    Instructions_t position = {0};
+    Instructions_t instruction = {0};
     while (1) {
-        if (get_instruction(&position) == pdPASS) {
+        if (get_instruction(&instruction) == pdPASS) {
             //ESP_LOGI(TAG, "Got position from queue: x=%.4f, y=%.4f, z=%.4f", position.x, position.y, position.z);
-            if (position.landing) {
+            if (instruction.landing) {
                 send_empty_IF(CPX_IF_LANDING);
-            } else if (position.disable_avoidance) {
+            } else if (instruction.disable_avoidance) {
                 send_empty_IF(CPX_IF_DISABLE_AVOIDANCE);
             } else {
-                send_position_to_stm(position.x, position.y, position.z);
+                send_position_to_stm(instruction.x, instruction.y, instruction.z);
             }
         }
         vTaskDelay(10);
@@ -153,6 +153,11 @@ static void aideck_receive_cpx_task(void *pvParameters) {
             }
             case CPX_IF_POSITION_LOST: {
                 ack.position_lost = 1;
+                set_instruction_ack(&ack);
+                break;
+            }
+            case CPX_IF_DISABLE_AVOIDANCE: {
+                ack.disable_avoidance = 1;
                 set_instruction_ack(&ack);
                 break;
             }
